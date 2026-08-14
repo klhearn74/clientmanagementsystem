@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Client — Practice Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --parchment: #F7F3EA;
+    --ink: #3D3226;
+    --ink-soft: #6B5E4F;
+    --sage: #6B7A4F;
+    --sage-deep: #55613F;
+    --sage-pale: #E9EDE2;
+    --border: #DCD3BC;
+    --rust: #A34A3A;
+    --gold: #B08A4E;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--parchment);
+    font-family: 'Montserrat', sans-serif;
+    color: var(--ink);
+    min-height: 100vh;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 32px;
+    background: #FFFEFB;
+    border-bottom: 1px solid var(--border);
+  }
+  .back-link {
+    color: var(--ink-soft);
+    text-decoration: none;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .back-link:hover { color: var(--sage-deep); }
+  .logout {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--ink-soft);
+    padding: 8px 16px;
+    border-radius: 3px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.82rem;
+    cursor: pointer;
+  }
+  .logout:hover { border-color: var(--sage); color: var(--sage-deep); }
+
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 32px 24px 100px;
+  }
+
+  .client-header {
+    margin-bottom: 28px;
+  }
+  .client-header h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 1.7rem;
+    margin: 0 0 4px;
+  }
+  .client-header .meta { color: var(--ink-soft); font-size: 0.85rem; }
+
+  .waiver-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    padding: 4px 10px;
+    border-radius: 20px;
+    margin-top: 10px;
+  }
+  .waiver-badge.signed { background: var(--sage-pale); color: var(--sage-deep); }
+  .waiver-badge.unsigned { background: #FBEFEC; color: var(--rust); }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 28px;
+  }
+  .tab {
+    padding: 10px 16px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    user-select: none;
+  }
+  .tab.active { color: var(--sage-deep); border-bottom-color: var(--sage); }
+  .tab.disabled { color: #C4BBA8; cursor: default; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .section {
+    background: #FFFEFB;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 24px;
+    margin-bottom: 18px;
+  }
+  .section h3 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 1.05rem;
+    margin: 0 0 16px;
+    color: var(--sage-deep);
+  }
+
+  .field { margin-bottom: 16px; }
+  .field:last-child { margin-bottom: 0; }
+  label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  input, textarea, select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.9rem;
+    background: var(--parchment);
+    color: var(--ink);
+  }
+  textarea { min-height: 64px; resize: vertical; }
+  input:focus, textarea:focus, select:focus { outline: 2px solid var(--sage); outline-offset: 1px; background: #fff; }
+
+  .diet-grid {
+    display: grid;
+    grid-template-columns: 1fr 140px;
+    gap: 10px 16px;
+    align-items: center;
+  }
+  .diet-grid .diet-label { font-size: 0.85rem; }
+
+  button.primary {
+    background: var(--sage);
+    color: #fff;
+    border: none;
+    padding: 11px 22px;
+    border-radius: 3px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  button.primary:hover { background: var(--sage-deep); }
+  button.primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .save-bar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+  }
+  .save-status {
+    font-size: 0.8rem;
+    color: var(--sage-deep);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .save-status.visible { opacity: 1; }
+
+  .waiver-text {
+    background: var(--parchment);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 16px;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    max-height: 220px;
+    overflow-y: auto;
+    margin-bottom: 18px;
+    white-space: pre-line;
+  }
+  .checkbox-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .checkbox-row input { width: auto; margin-top: 3px; }
+  .checkbox-row label { font-size: 0.85rem; color: var(--ink); font-weight: 400; }
+
+  .signed-info {
+    font-size: 0.85rem;
+    color: var(--sage-deep);
+    background: var(--sage-pale);
+    padding: 12px 16px;
+    border-radius: 3px;
+  }
+
+  .placeholder-panel {
+    text-align: center;
+    color: var(--ink-soft);
+    padding: 60px 20px;
+    font-size: 0.9rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="dashboard.html" class="back-link">← Back to Clients</a>
+  <button class="logout" id="logoutBtn">Sign out</button>
+</header>
+
+<main>
+  <div class="client-header">
+    <h2 id="clientName">Loading…</h2>
+    <div class="meta" id="clientMeta"></div>
+    <div id="waiverBadgeWrap"></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="intake">Intake</div>
+    <div class="tab" data-tab="waiver">Waiver</div>
+    <div class="tab disabled" title="Coming in the next build step">Concerns</div>
+    <div class="tab disabled" title="Coming in the next build step">Formulas</div>
+  </div>
+
+  <!-- INTAKE PANEL -->
+  <div class="panel active" id="panel-intake">
+    <form id="intakeForm">
+      <div class="section">
+        <h3>Reason for Visit</h3>
+        <div class="field">
+          <label for="i_reason">What brings you in? What are your main health concerns?</label>
+          <textarea id="i_reason"></textarea>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Current Care</h3>
+        <div class="field">
+          <label for="i_practitioners">Other practitioners currently involved (doctor, dietitian, etc.)</label>
+          <textarea id="i_practitioners"></textarea>
+        </div>
+        <div class="field">
+          <label for="i_medications">Current medications / supplements (with dose if known)</label>
+          <textarea id="i_medications"></textarea>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Systems Review</h3>
+        <div class="field"><label for="s_digestion">Digestion</label><textarea id="s_digestion"></textarea></div>
+        <div class="field"><label for="s_skin">Skin</label><textarea id="s_skin"></textarea></div>
+        <div class="field"><label for="s_immune">Immune</label><textarea id="s_immune"></textarea></div>
+        <div class="field"><label for="s_cardiovascular">Cardiovascular</label><textarea id="s_cardiovascular"></textarea></div>
+        <div class="field"><label for="s_respiratory">Respiratory</label><textarea id="s_respiratory"></textarea></div>
+        <div class="field"><label for="s_urinary">Urinary</label><textarea id="s_urinary"></textarea></div>
+        <div class="field"><label for="s_reproductive">Reproductive / Hormonal</label><textarea id="s_reproductive"></textarea></div>
+        <div class="field"><label for="s_nervous">Nervous system / Emotional</label><textarea id="s_nervous"></textarea></div>
+        <div class="field"><label for="s_sleep">Sleep</label><textarea id="s_sleep"></textarea></div>
+        <div class="field"><label for="s_energy">Energy</label><textarea id="s_energy"></textarea></div>
+        <div class="field"><label for="s_headaches">Headaches</label><textarea id="s_headaches"></textarea></div>
+        <div class="field"><label for="s_earseyesmouth">Ears / Eyes / Mouth</label><textarea id="s_earseyesmouth"></textarea></div>
+        <div class="field"><label for="s_musculoskeletal">Musculoskeletal</label><textarea id="s_musculoskeletal"></textarea></div>
+      </div>
+
+      <div class="section">
+        <h3>Diet</h3>
+        <div class="diet-grid" id="dietGrid"></div>
+      </div>
+
+      <div class="section">
+        <h3>Lifestyle</h3>
+        <div class="field"><label for="l_exercise">Exercise (type / frequency)</label><input type="text" id="l_exercise"></div>
+        <div class="field"><label for="l_stress">Stress (1–10 and main sources)</label><input type="text" id="l_stress"></div>
+        <div class="field"><label for="l_sleep">Sleep (hours, quality, wake-ups)</label><input type="text" id="l_sleep"></div>
+      </div>
+
+      <div class="section">
+        <h3>Family History</h3>
+        <div class="field">
+          <label for="i_family">Family history (diabetes, heart disease, thyroid, etc.)</label>
+          <textarea id="i_family"></textarea>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Allergies & Sensitivities</h3>
+        <div class="field">
+          <label for="i_allergies">Known allergies or sensitivities</label>
+          <textarea id="i_allergies"></textarea>
+        </div>
+      </div>
+
+      <div class="save-bar">
+        <span class="save-status" id="intakeSaveStatus">Saved</span>
+        <button type="submit" class="primary" id="saveIntakeBtn">Save Intake</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- WAIVER PANEL -->
+  <div class="panel" id="panel-waiver">
+    <div class="section" id="waiverSection">
+      <h3>Liability Waiver & Informed Consent</h3>
+      <div class="waiver-text" id="waiverTextBox">Loading…</div>
+      <div id="waiverActionArea"></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-concerns">
+    <div class="placeholder-panel">Concerns & session notes are coming in the next build step.</div>
+  </div>
+  <div class="panel" id="panel-formulas">
+    <div class="placeholder-panel">Formula history is coming in a later build step.</div>
+  </div>
+</main>
+
+<script>
+  const BACKEND_URL = "https://practitioner-api.val.run";
+  const params = new URLSearchParams(window.location.search);
+  const clientId = params.get("id");
+
+  if (!clientId) {
+    window.location.href = "dashboard.html";
+  }
+
+  const DIET_ITEMS = [
+    ["sugar", "Sugar / refined carbs"],
+    ["alcohol", "Alcohol"],
+    ["caffeine", "Caffeine"],
+    ["processed", "Processed food"],
+    ["vegetables", "Vegetables"],
+    ["protein", "Protein sources"],
+    ["eatingout", "Eating out"],
+    ["water", "Water intake (glasses/day feel)"],
+  ];
+  const FREQ_OPTIONS = ["", "Daily", "Few times a week", "Rarely", "Never"];
+
+  const dietGrid = document.getElementById("dietGrid");
+  DIET_ITEMS.forEach(([key, label]) => {
+    const labelEl = document.createElement("div");
+    labelEl.className = "diet-label";
+    labelEl.textContent = label;
+    const select = document.createElement("select");
+    select.id = `diet_${key}`;
+    FREQ_OPTIONS.forEach((opt) => {
+      const o = document.createElement("option");
+      o.value = opt;
+      o.textContent = opt || "—";
+      select.appendChild(o);
+    });
+    dietGrid.appendChild(labelEl);
+    dietGrid.appendChild(select);
+  });
+
+  // ---------- Tabs ----------
+  document.querySelectorAll(".tab:not(.disabled)").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+      document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+      tab.classList.add("active");
+      document.getElementById(`panel-${tab.dataset.tab}`).classList.add("active");
+    });
+  });
+
+  // ---------- Load client ----------
+  async function loadClient() {
+    const res = await fetch(`${BACKEND_URL}/api/clients/${clientId}`, { credentials: "include" });
+    if (res.status === 401) { window.location.href = "index.html"; return; }
+    if (!res.ok) { document.getElementById("clientName").textContent = "Client not found"; return; }
+    const client = await res.json();
+    document.getElementById("clientName").textContent = client.full_name;
+    const meta = [client.email, client.phone].filter(Boolean).join(" · ");
+    document.getElementById("clientMeta").textContent = meta;
+  }
+
+  // ---------- Intake ----------
+  const INTAKE_FIELD_IDS = [
+    "i_reason","i_practitioners","i_medications",
+    "s_digestion","s_skin","s_immune","s_cardiovascular","s_respiratory",
+    "s_urinary","s_reproductive","s_nervous","s_sleep","s_energy",
+    "s_headaches","s_earseyesmouth","s_musculoskeletal",
+    "l_exercise","l_stress","l_sleep",
+    "i_family","i_allergies"
+  ];
+
+  async function loadIntake() {
+    const res = await fetch(`${BACKEND_URL}/api/clients/${clientId}/intake`, { credentials: "include" });
+    if (res.status === 401) { window.location.href = "index.html"; return; }
+    const data = await res.json();
+    if (!data) return;
+    const responses = data.responses || {};
+    INTAKE_FIELD_IDS.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el && responses[id] !== undefined) el.value = responses[id];
+    });
+    DIET_ITEMS.forEach(([key]) => {
+      const el = document.getElementById(`diet_${key}`);
+      if (el && responses[`diet_${key}`] !== undefined) el.value = responses[`diet_${key}`];
+    });
+  }
+
+  document.getElementById("intakeForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById("saveIntakeBtn");
+    btn.disabled = true;
+
+    const responses = {};
+    INTAKE_FIELD_IDS.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) responses[id] = el.value;
+    });
+    DIET_ITEMS.forEach(([key]) => {
+      const el = document.getElementById(`diet_${key}`);
+      if (el) responses[`diet_${key}`] = el.value;
+    });
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/clients/${clientId}/intake`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ responses }),
+      });
+      if (res.ok) {
+        const status = document.getElementById("intakeSaveStatus");
+        status.classList.add("visible");
+        setTimeout(() => status.classList.remove("visible"), 2000);
+      }
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ---------- Waiver ----------
+  const WAIVER_TEXT = `Liability Waiver & Informed Consent
+
+I understand that my herbalist is not a licensed medical doctor and does not diagnose, treat, or cure disease. The information and recommendations provided are educational and complementary in nature, and are not a substitute for medical care. I agree to continue consulting my physician or other qualified healthcare provider, particularly for any existing medical conditions.
+
+I understand that herbs and supplements may interact with medications, and I agree to disclose all current medications and supplements to my herbalist to the best of my knowledge.
+
+If I am pregnant, nursing, or become pregnant during the course of care, I agree to inform my herbalist immediately.
+
+I understand that no specific results or outcomes are guaranteed.
+
+I take full personal responsibility for my use of any recommendations provided.
+
+I understand that my records will be kept confidential in accordance with my herbalist's privacy practices.`;
+
+  function renderWaiverBadge(signed) {
+    const wrap = document.getElementById("waiverBadgeWrap");
+    if (signed) {
+      wrap.innerHTML = `<span class="waiver-badge signed">✓ Waiver signed</span>`;
+    } else {
+      wrap.innerHTML = `<span class="waiver-badge unsigned">Waiver not yet signed</span>`;
+    }
+  }
+
+  async function loadWaiver() {
+    document.getElementById("waiverTextBox").textContent = WAIVER_TEXT;
+    const res = await fetch(`${BACKEND_URL}/api/clients/${clientId}/waiver`, { credentials: "include" });
+    if (res.status === 401) { window.location.href = "index.html"; return; }
+    const waiver = await res.json();
+    const actionArea = document.getElementById("waiverActionArea");
+
+    if (waiver) {
+      renderWaiverBadge(true);
+      const signedDate = new Date(waiver.signed_at).toLocaleDateString();
+      actionArea.innerHTML = `<div class="signed-info">Signed on ${signedDate}</div>`;
+    } else {
+      renderWaiverBadge(false);
+      actionArea.innerHTML = `
+        <div class="checkbox-row">
+          <input type="checkbox" id="waiverAgree">
+          <label for="waiverAgree">I have read and agree to the terms above, on behalf of this client.</label>
+        </div>
+        <button class="primary" id="signWaiverBtn">Record Signature</button>
+      `;
+      document.getElementById("signWaiverBtn").addEventListener("click", async () => {
+        if (!document.getElementById("waiverAgree").checked) return;
+        const res = await fetch(`${BACKEND_URL}/api/clients/${clientId}/waiver`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ waiver_text: WAIVER_TEXT }),
+        });
+        if (res.ok) loadWaiver();
+      });
+    }
+  }
+
+  document.getElementById("logoutBtn").addEventListener("click", async () => {
+    await fetch(`${BACKEND_URL}/auth/logout`, { method: "POST", credentials: "include" });
+    window.location.href = "index.html";
+  });
+
+  loadClient();
+  loadIntake();
+  loadWaiver();
+</script>
+
+</body>
+</html>
