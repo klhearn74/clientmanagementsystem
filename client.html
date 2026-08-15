@@ -517,7 +517,7 @@
   <div class="tabs">
     <div class="tab active" data-tab="intake">Intake</div>
     <div class="tab" data-tab="waiver">Waiver</div>
-    <div class="tab" data-tab="concerns">Concerns</div>
+    <div class="tab" data-tab="concerns">Health Goals</div>
   </div>
 
   <!-- INTAKE PANEL -->
@@ -614,11 +614,11 @@
     <div id="concernsListView">
       <div class="toolbar-row">
         <span></span>
-        <button class="primary" id="newConcernBtn">+ New Concern</button>
+        <button class="primary" id="newConcernBtn">+ New Health Goal</button>
       </div>
       <div class="concern-list" id="concernList"></div>
       <div class="placeholder-panel" id="noConcerns" style="display:none;">
-        No concerns tracked yet for this client.
+        No health goals tracked yet for this client.
       </div>
     </div>
 
@@ -755,7 +755,7 @@
 
         <div class="save-bar">
           <button type="button" class="secondary" id="cancelConcernBtn">Cancel</button>
-          <button type="submit" class="primary" id="saveConcernBtn">Save Concern</button>
+          <button type="submit" class="primary" id="saveConcernBtn">Save Health Goal</button>
         </div>
       </form>
 
@@ -791,23 +791,17 @@
     <h3 id="formulaModalTitle">New Formula Version</h3>
     <form id="formulaForm">
 
-      <div class="field-row">
-        <div class="field">
-          <label for="fm_type">Entry type</label>
-          <select id="fm_type">
-            <option value="Initial">Initial (first formula for this concern)</option>
-            <option value="Revision">Revision (composition changed)</option>
-            <option value="Reorder">Reorder (same formula, rebatched)</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="fm_name">Formula name <span class="optional-tag">(optional)</span></label>
-          <input type="text" id="fm_name" placeholder="e.g. Fatigue Formula">
-        </div>
+      <div class="field">
+        <label for="fm_type">Entry type</label>
+        <select id="fm_type">
+          <option value="Initial">Initial (first formula for this concern)</option>
+          <option value="Revision">Revision (composition changed)</option>
+          <option value="Reorder">Reorder (same formula, rebatched)</option>
+        </select>
       </div>
 
       <div class="row-group-label">Preparations</div>
-      <div class="section-hint">Each preparation (a tincture, a tea, etc.) gets its own herb list and its own dispensed-product info. Add more than one if you're sending the client several forms of the same formula.</div>
+      <div class="section-hint">Each preparation (a tincture, a tea, etc.) gets its own name, herb list, and dispensed-product info. Add more than one if you're sending the client several forms of the same formula.</div>
       <div id="preparationRows"></div>
       <button type="button" class="secondary add-row-btn" id="addPreparationBtn">+ Add Preparation</button>
 
@@ -1415,7 +1409,7 @@ I understand that my records will be kept confidential in accordance with my her
       </div>
       <input type="text" class="herb-actions" placeholder="Herbal actions (e.g. anti-inflammatory, bitter)" value="${escapeAttr(herb.actions)}">
       <input type="text" class="herb-energetics" placeholder="Energetics (e.g. warming, drying)" value="${escapeAttr(herb.energetics)}">
-      <input type="text" class="herb-notes" placeholder="Interaction notes (private)" value="${escapeAttr(herb.notes)}">
+      <input type="text" class="herb-notes" placeholder="Herb-drug interactions (private)" value="${escapeAttr(herb.notes)}">
     `);
   }
 
@@ -1432,8 +1426,10 @@ I understand that my records will be kept confidential in accordance with my her
         <select class="prep-type">
           ${PREP_TYPES.map((t) => `<option ${(!isCustomType && prep.type === t) || (isCustomType && t === "Other") ? "selected" : ""}>${t}</option>`).join("")}
         </select>
-        <input type="text" class="prep-type-other" placeholder="Custom type" value="${isCustomType ? escapeAttr(prep.type) : ""}" style="display:${isCustomType ? "block" : "none"};">
+        <input type="text" class="prep-name" placeholder="Formula name (optional)" value="${escapeAttr(prep.name)}">
       </div>
+      <input type="text" class="prep-type-other" placeholder="Custom type" value="${isCustomType ? escapeAttr(prep.type) : ""}" style="display:${isCustomType ? "block" : "none"};margin-top:6px;">
+      <textarea class="prep-notes" placeholder="Notes — e.g. paste a formula built in Perfect Herbs, or its link" style="margin-top:10px;min-height:44px;">${escapeAttr(prep.notes)}</textarea>
       <div class="row-group-label" style="margin:14px 0 8px;font-size:0.75rem;">Herbs in this preparation</div>
       <div class="prep-herb-rows"></div>
       <button type="button" class="secondary add-row-btn prep-add-herb-btn">+ Add Herb</button>
@@ -1504,6 +1500,8 @@ I understand that my records will be kept confidential in accordance with my her
       const type = typeSelect.value === "Other" ? block.querySelector(".prep-type-other").value : typeSelect.value;
       return {
         type,
+        name: block.querySelector(".prep-name").value,
+        notes: block.querySelector(".prep-notes").value,
         herbs: readHerbRowsFrom(block.querySelector(".prep-herb-rows")),
         dispensed_batch_size: block.querySelector(".prep-batch").value,
         dispensed_price: block.querySelector(".prep-price").value,
@@ -1532,9 +1530,11 @@ I understand that my records will be kept confidential in accordance with my her
     el.className = "formula-card";
     const typeClass = formula.entry_type === "Reorder" ? "type-reorder" : "type-revision";
     const preps = formula.preparations || [];
+    const firstNamedPrep = preps.find((p) => p.name);
     const prepSummary = preps.map((p) => {
       const herbNames = (p.herbs || []).map((h) => h.name).filter(Boolean).join(", ");
-      return `${p.type || "Preparation"}: ${herbNames || "no herbs listed"}`;
+      const label = p.name ? `${p.type || "Preparation"} (${p.name})` : (p.type || "Preparation");
+      return `${label}: ${herbNames || "no herbs listed"}`;
     }).join(" · ");
     const mostRecentDate = preps.map((p) => p.dispensed_date).filter(Boolean).sort().pop();
     const dateStr = mostRecentDate
@@ -1543,7 +1543,7 @@ I understand that my records will be kept confidential in accordance with my her
     el.innerHTML = `
       <div class="formula-card-top">
         <div>
-          <span class="formula-version">v${formula.version_number}${formula.formula_name ? " — " + escapeHtml(formula.formula_name) : ""}</span>
+          <span class="formula-version">v${formula.version_number}${firstNamedPrep ? " — " + escapeHtml(firstNamedPrep.name) : ""}</span>
           <span class="formula-type-badge ${typeClass}">${escapeHtml(formula.entry_type)}</span>
         </div>
         <span class="formula-date">${dateStr}</span>
@@ -1584,7 +1584,6 @@ I understand that my records will be kept confidential in accordance with my her
 
     if (formula) {
       document.getElementById("fm_type").value = formula.entry_type || "Initial";
-      document.getElementById("fm_name").value = formula.formula_name || "";
       document.getElementById("fm_why_private").value = formula.changed_why_private || "";
       document.getElementById("fm_what_client").value = formula.changed_what_client || "";
       document.getElementById("fm_response").value = formula.client_response || "";
@@ -1630,7 +1629,6 @@ I understand that my records will be kept confidential in accordance with my her
     const body = {
       version_number: versionNumber,
       entry_type: entryType,
-      formula_name: document.getElementById("fm_name").value,
       preparations: readPreparations(),
       supplements: readSupplementRows(),
       lifestyle: readLifestyleRows(),
