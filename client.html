@@ -266,6 +266,22 @@
     gap: 14px;
   }
 
+  .tissue-block-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--sage-deep);
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--sage-pale);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .tissue-grid + .tissue-block-label {
+    margin-top: 22px;
+  }
+
   @media (max-width: 500px) {
     .tissue-grid { grid-template-columns: 1fr; }
   }
@@ -422,6 +438,8 @@
 
         <div class="section">
           <h3>Tissue State</h3>
+
+          <div class="tissue-block-label" id="tissueLabel1">Primary complaint</div>
           <div class="tissue-grid">
             <div class="field">
               <label for="c_hotcold">Hot / Cold</label>
@@ -451,6 +469,38 @@
               </select>
             </div>
           </div>
+
+          <div class="tissue-block-label" id="tissueLabel2" style="display:none;">Secondary complaint</div>
+          <div class="tissue-grid" id="tissueGrid2" style="display:none;">
+            <div class="field">
+              <label for="c_hotcold2">Hot / Cold</label>
+              <select id="c_hotcold2">
+                <option value="">—</option>
+                <option value="Hot">Hot</option>
+                <option value="Neutral">Neutral</option>
+                <option value="Cold">Cold</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="c_dampdry2">Damp / Dry</label>
+              <select id="c_dampdry2">
+                <option value="">—</option>
+                <option value="Damp">Damp</option>
+                <option value="Neutral">Neutral</option>
+                <option value="Dry">Dry</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="c_tenselax2">Tense / Lax</label>
+              <select id="c_tenselax2">
+                <option value="">—</option>
+                <option value="Tense">Tense</option>
+                <option value="Neutral">Neutral</option>
+                <option value="Lax">Lax</option>
+              </select>
+            </div>
+          </div>
+
           <div class="field" style="margin-top:14px;">
             <label for="c_organs">Organ systems / affinities involved</label>
             <input type="text" id="c_organs" placeholder="e.g. digestion, liver, nervous system">
@@ -692,6 +742,9 @@ I understand that my records will be kept confidential in accordance with my her
     ["c_hotcold", "tissue_hot_cold"],
     ["c_dampdry", "tissue_damp_dry"],
     ["c_tenselax", "tissue_tense_lax"],
+    ["c_hotcold2", "tissue2_hot_cold"],
+    ["c_dampdry2", "tissue2_damp_dry"],
+    ["c_tenselax2", "tissue2_tense_lax"],
     ["c_organs", "organ_systems"],
     ["c_status", "status"],
     ["c_timeline", "expected_timeline"],
@@ -707,9 +760,14 @@ I understand that my records will be kept confidential in accordance with my her
   }
 
   function tissueSummary(concern) {
-    const parts = [concern.tissue_hot_cold, concern.tissue_damp_dry, concern.tissue_tense_lax]
+    const primaryParts = [concern.tissue_hot_cold, concern.tissue_damp_dry, concern.tissue_tense_lax]
       .filter((v) => v && v !== "Neutral");
-    return parts.length ? parts.join(" · ") : "";
+    const secondaryParts = [concern.tissue2_hot_cold, concern.tissue2_damp_dry, concern.tissue2_tense_lax]
+      .filter((v) => v && v !== "Neutral");
+    const bits = [];
+    if (primaryParts.length) bits.push(primaryParts.join(" · "));
+    if (secondaryParts.length) bits.push(secondaryParts.join(" · "));
+    return bits.join(" / ");
   }
 
   function concernCard(concern) {
@@ -734,6 +792,33 @@ I understand that my records will be kept confidential in accordance with my her
     div.textContent = str ?? "";
     return div.innerHTML;
   }
+
+  // Live-update the tissue state block labels to match whatever was
+  // typed into the complaint fields, so it's always clear which
+  // complaint's energetics you're evaluating.
+  const primaryComplaintInput = document.getElementById("c_primary");
+  const secondaryComplaintInput = document.getElementById("c_secondary");
+  const tissueLabel1 = document.getElementById("tissueLabel1");
+  const tissueLabel2 = document.getElementById("tissueLabel2");
+  const tissueGrid2 = document.getElementById("tissueGrid2");
+
+  function updateTissueLabels() {
+    const primaryText = primaryComplaintInput.value.trim();
+    tissueLabel1.textContent = primaryText || "Primary complaint";
+
+    const secondaryText = secondaryComplaintInput.value.trim().split("\n")[0].trim();
+    if (secondaryText) {
+      tissueLabel2.textContent = secondaryText;
+      tissueLabel2.style.display = "block";
+      tissueGrid2.style.display = "grid";
+    } else {
+      tissueLabel2.style.display = "none";
+      tissueGrid2.style.display = "none";
+    }
+  }
+
+  primaryComplaintInput.addEventListener("input", updateTissueLabels);
+  secondaryComplaintInput.addEventListener("input", updateTissueLabels);
 
   async function loadConcerns() {
     const res = await fetch(`${BACKEND_URL}/api/clients/${clientId}/concerns`, { credentials: "include" });
@@ -761,6 +846,7 @@ I understand that my records will be kept confidential in accordance with my her
       });
     }
 
+    updateTissueLabels();
     document.getElementById("concernsListView").style.display = "none";
     document.getElementById("concernFormView").style.display = "block";
   }
