@@ -474,16 +474,32 @@
 
   .add-row-btn { font-size: 0.8rem; padding: 8px 16px; margin-bottom: 8px; }
 
-  .dispensed-grid {
+  .section-hint {
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    margin-bottom: 12px;
+    line-height: 1.4;
+  }
+
+  .preparation-block {
+    border: 1px solid var(--sage);
+    background: #FCFBF6;
+  }
+  .preparation-block .dynamic-row {
+    background: var(--parchment);
+  }
+  .prep-nested-dispensed {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 8px;
+    margin-top: 10px;
   }
   @media (max-width: 560px) {
-    .dispensed-grid { grid-template-columns: 1fr 1fr; }
+    .prep-nested-dispensed { grid-template-columns: 1fr; }
   }
 </style>
 </head>
+
 <body>
 
 <header>
@@ -779,6 +795,7 @@
         <div class="field">
           <label for="fm_type">Entry type</label>
           <select id="fm_type">
+            <option value="Initial">Initial (first formula for this concern)</option>
             <option value="Revision">Revision (composition changed)</option>
             <option value="Reorder">Reorder (same formula, rebatched)</option>
           </select>
@@ -789,25 +806,18 @@
         </div>
       </div>
 
-      <div class="row-group-label">Herbs</div>
-      <div id="herbRows"></div>
-      <button type="button" class="secondary add-row-btn" id="addHerbBtn">+ Add Herb</button>
+      <div class="row-group-label">Preparations</div>
+      <div class="section-hint">Each preparation (a tincture, a tea, etc.) gets its own herb list and its own dispensed-product info. Add more than one if you're sending the client several forms of the same formula.</div>
+      <div id="preparationRows"></div>
+      <button type="button" class="secondary add-row-btn" id="addPreparationBtn">+ Add Preparation</button>
 
       <div class="row-group-label">Supplements</div>
       <div id="supplementRows"></div>
       <button type="button" class="secondary add-row-btn" id="addSupplementBtn">+ Add Supplement</button>
 
-      <div class="row-group-label">Lifestyle Recommendations</div>
+      <div class="row-group-label">Lifestyle Recommendations <span class="optional-tag">(client-facing)</span></div>
       <div id="lifestyleRows"></div>
       <button type="button" class="secondary add-row-btn" id="addLifestyleBtn">+ Add Lifestyle Item</button>
-
-      <div class="row-group-label">Dispensed Product</div>
-      <div class="dispensed-grid">
-        <input type="text" id="fm_disp_format" placeholder="Format (tea, tincture, capsule...)">
-        <input type="text" id="fm_disp_batch" placeholder="Batch size">
-        <input type="text" id="fm_disp_price" placeholder="Price">
-        <input type="date" id="fm_disp_date">
-      </div>
 
       <div class="field" style="margin-top:18px;">
         <label for="fm_why_private">What changed & why <span class="private-tag">private</span></label>
@@ -1385,9 +1395,9 @@ I understand that my records will be kept confidential in accordance with my her
     return row;
   }
 
-  function addHerbRow(herb) {
+  function addHerbRow(container, herb) {
     herb = herb || {};
-    makeRemovableRow(document.getElementById("herbRows"), `
+    makeRemovableRow(container, `
       <div class="row-header"><span>Herb</span><button type="button" class="remove-row-btn">Remove</button></div>
       <div class="row-grid-3">
         <input type="text" class="herb-name" placeholder="Herb name (Latin / common)" value="${escapeAttr(herb.name)}">
@@ -1409,6 +1419,46 @@ I understand that my records will be kept confidential in accordance with my her
     `);
   }
 
+  const PREP_TYPES = ["Tincture", "Tea", "Capsule", "Smoking blend", "Other"];
+
+  function addPreparationRow(prep) {
+    prep = prep || {};
+    const isCustomType = prep.type && !PREP_TYPES.slice(0, -1).includes(prep.type);
+    const row = document.createElement("div");
+    row.className = "dynamic-row preparation-block";
+    row.innerHTML = `
+      <div class="row-header"><span>Preparation</span><button type="button" class="remove-row-btn">Remove</button></div>
+      <div class="row-grid-2">
+        <select class="prep-type">
+          ${PREP_TYPES.map((t) => `<option ${(!isCustomType && prep.type === t) || (isCustomType && t === "Other") ? "selected" : ""}>${t}</option>`).join("")}
+        </select>
+        <input type="text" class="prep-type-other" placeholder="Custom type" value="${isCustomType ? escapeAttr(prep.type) : ""}" style="display:${isCustomType ? "block" : "none"};">
+      </div>
+      <div class="row-group-label" style="margin:14px 0 8px;font-size:0.75rem;">Herbs in this preparation</div>
+      <div class="prep-herb-rows"></div>
+      <button type="button" class="secondary add-row-btn prep-add-herb-btn">+ Add Herb</button>
+      <div class="prep-nested-dispensed">
+        <input type="text" class="prep-batch" placeholder="Batch size" value="${escapeAttr(prep.dispensed_batch_size)}">
+        <input type="text" class="prep-price" placeholder="Price" value="${escapeAttr(prep.dispensed_price)}">
+        <input type="date" class="prep-date" value="${escapeAttr(prep.dispensed_date)}">
+      </div>
+    `;
+    row.querySelector(".remove-row-btn").addEventListener("click", () => row.remove());
+
+    const typeSelect = row.querySelector(".prep-type");
+    const otherInput = row.querySelector(".prep-type-other");
+    typeSelect.addEventListener("change", () => {
+      otherInput.style.display = typeSelect.value === "Other" ? "block" : "none";
+    });
+
+    const herbContainer = row.querySelector(".prep-herb-rows");
+    row.querySelector(".prep-add-herb-btn").addEventListener("click", () => addHerbRow(herbContainer));
+    (prep.herbs || []).forEach((h) => addHerbRow(herbContainer, h));
+
+    document.getElementById("preparationRows").appendChild(row);
+    return row;
+  }
+
   function addSupplementRow(supp) {
     supp = supp || {};
     makeRemovableRow(document.getElementById("supplementRows"), `
@@ -1417,8 +1467,7 @@ I understand that my records will be kept confidential in accordance with my her
         <input type="text" class="supplement-name" placeholder="Name" value="${escapeAttr(supp.name)}">
         <input type="text" class="supplement-dose" placeholder="Dose / timing" value="${escapeAttr(supp.dose)}">
       </div>
-      <input type="text" class="supplement-rationale" placeholder="Rationale" value="${escapeAttr(supp.rationale)}">
-      <input type="text" class="supplement-synergy" placeholder="Synergy notes" value="${escapeAttr(supp.synergy)}">
+      <input type="text" class="supplement-notes" placeholder="Notes" value="${escapeAttr(supp.notes)}">
     `);
   }
 
@@ -1436,8 +1485,8 @@ I understand that my records will be kept confidential in accordance with my her
     return String(str).replace(/"/g, "&quot;");
   }
 
-  function readHerbRows() {
-    return [...document.querySelectorAll("#herbRows .dynamic-row")].map((row) => ({
+  function readHerbRowsFrom(container) {
+    return [...container.querySelectorAll(":scope > .dynamic-row")].map((row) => ({
       name: row.querySelector(".herb-name").value,
       ratio: row.querySelector(".herb-ratio").value,
       percent: row.querySelector(".herb-percent").value,
@@ -1449,12 +1498,25 @@ I understand that my records will be kept confidential in accordance with my her
     })).filter((h) => h.name.trim());
   }
 
+  function readPreparations() {
+    return [...document.querySelectorAll("#preparationRows .preparation-block")].map((block) => {
+      const typeSelect = block.querySelector(".prep-type");
+      const type = typeSelect.value === "Other" ? block.querySelector(".prep-type-other").value : typeSelect.value;
+      return {
+        type,
+        herbs: readHerbRowsFrom(block.querySelector(".prep-herb-rows")),
+        dispensed_batch_size: block.querySelector(".prep-batch").value,
+        dispensed_price: block.querySelector(".prep-price").value,
+        dispensed_date: block.querySelector(".prep-date").value,
+      };
+    });
+  }
+
   function readSupplementRows() {
     return [...document.querySelectorAll("#supplementRows .dynamic-row")].map((row) => ({
       name: row.querySelector(".supplement-name").value,
       dose: row.querySelector(".supplement-dose").value,
-      rationale: row.querySelector(".supplement-rationale").value,
-      synergy: row.querySelector(".supplement-synergy").value,
+      notes: row.querySelector(".supplement-notes").value,
     })).filter((s) => s.name.trim());
   }
 
@@ -1469,9 +1531,14 @@ I understand that my records will be kept confidential in accordance with my her
     const el = document.createElement("div");
     el.className = "formula-card";
     const typeClass = formula.entry_type === "Reorder" ? "type-reorder" : "type-revision";
-    const herbNames = (formula.herbs || []).map((h) => h.name).filter(Boolean).join(", ");
-    const dateStr = formula.dispensed_date
-      ? new Date(formula.dispensed_date + "T00:00:00").toLocaleDateString()
+    const preps = formula.preparations || [];
+    const prepSummary = preps.map((p) => {
+      const herbNames = (p.herbs || []).map((h) => h.name).filter(Boolean).join(", ");
+      return `${p.type || "Preparation"}: ${herbNames || "no herbs listed"}`;
+    }).join(" · ");
+    const mostRecentDate = preps.map((p) => p.dispensed_date).filter(Boolean).sort().pop();
+    const dateStr = mostRecentDate
+      ? new Date(mostRecentDate + "T00:00:00").toLocaleDateString()
       : new Date(formula.created_at).toLocaleDateString();
     el.innerHTML = `
       <div class="formula-card-top">
@@ -1481,7 +1548,7 @@ I understand that my records will be kept confidential in accordance with my her
         </div>
         <span class="formula-date">${dateStr}</span>
       </div>
-      <div class="formula-herb-list">${escapeHtml(herbNames || "No herbs listed")}</div>
+      <div class="formula-herb-list">${escapeHtml(prepSummary || "No preparations listed")}</div>
     `;
     el.addEventListener("click", () => openFormulaModal(formula));
     return el;
@@ -1503,7 +1570,7 @@ I understand that my records will be kept confidential in accordance with my her
   }
 
   function clearDynamicRows() {
-    document.getElementById("herbRows").innerHTML = "";
+    document.getElementById("preparationRows").innerHTML = "";
     document.getElementById("supplementRows").innerHTML = "";
     document.getElementById("lifestyleRows").innerHTML = "";
   }
@@ -1516,18 +1583,18 @@ I understand that my records will be kept confidential in accordance with my her
     document.getElementById("formulaModalTitle").textContent = formula ? "Edit Formula Version" : "New Formula Version";
 
     if (formula) {
-      document.getElementById("fm_type").value = formula.entry_type || "Revision";
+      document.getElementById("fm_type").value = formula.entry_type || "Initial";
       document.getElementById("fm_name").value = formula.formula_name || "";
-      document.getElementById("fm_disp_format").value = formula.dispensed_format || "";
-      document.getElementById("fm_disp_batch").value = formula.dispensed_batch_size || "";
-      document.getElementById("fm_disp_price").value = formula.dispensed_price || "";
-      document.getElementById("fm_disp_date").value = formula.dispensed_date || "";
       document.getElementById("fm_why_private").value = formula.changed_why_private || "";
       document.getElementById("fm_what_client").value = formula.changed_what_client || "";
       document.getElementById("fm_response").value = formula.client_response || "";
-      (formula.herbs || []).forEach(addHerbRow);
+      (formula.preparations || []).forEach(addPreparationRow);
       (formula.supplements || []).forEach(addSupplementRow);
       (formula.lifestyle || []).forEach(addLifestyleRow);
+    } else {
+      // First formula for this concern → default to "Initial" rather than
+      // forcing a Revision/Reorder choice that doesn't make sense yet.
+      document.getElementById("fm_type").value = currentFormulas.length === 0 ? "Initial" : "Revision";
     }
 
     document.getElementById("formulaModalOverlay").classList.add("visible");
@@ -1539,7 +1606,7 @@ I understand that my records will be kept confidential in accordance with my her
 
   document.getElementById("newFormulaBtn").addEventListener("click", () => openFormulaModal(null));
   document.getElementById("cancelFormulaBtn").addEventListener("click", closeFormulaModal);
-  document.getElementById("addHerbBtn").addEventListener("click", () => addHerbRow());
+  document.getElementById("addPreparationBtn").addEventListener("click", () => addPreparationRow());
   document.getElementById("addSupplementBtn").addEventListener("click", () => addSupplementRow());
   document.getElementById("addLifestyleBtn").addEventListener("click", () => addLifestyleRow());
   document.getElementById("formulaModalOverlay").addEventListener("click", (e) => {
@@ -1564,13 +1631,9 @@ I understand that my records will be kept confidential in accordance with my her
       version_number: versionNumber,
       entry_type: entryType,
       formula_name: document.getElementById("fm_name").value,
-      herbs: readHerbRows(),
+      preparations: readPreparations(),
       supplements: readSupplementRows(),
       lifestyle: readLifestyleRows(),
-      dispensed_format: document.getElementById("fm_disp_format").value,
-      dispensed_batch_size: document.getElementById("fm_disp_batch").value,
-      dispensed_price: document.getElementById("fm_disp_price").value,
-      dispensed_date: document.getElementById("fm_disp_date").value,
       changed_why_private: document.getElementById("fm_why_private").value,
       changed_what_client: document.getElementById("fm_what_client").value,
       client_response: document.getElementById("fm_response").value,
