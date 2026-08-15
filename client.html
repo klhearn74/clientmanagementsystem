@@ -394,6 +394,94 @@
     color: var(--ink-soft);
     margin-top: 3px;
   }
+
+  .modal.formula-modal { max-width: 620px; }
+
+  .formula-list { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+  .formula-card {
+    background: #FFFEFB;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px 18px;
+    cursor: pointer;
+  }
+  .formula-card:hover { border-color: var(--sage); }
+  .formula-card-top { display: flex; justify-content: space-between; align-items: center; }
+  .formula-version { font-weight: 600; font-size: 0.9rem; }
+  .formula-type-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 9px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-left: 8px;
+  }
+  .formula-type-badge.type-revision { background: var(--sage-pale); color: var(--sage-deep); }
+  .formula-type-badge.type-reorder { background: #F1EAD8; color: #8A6E2F; }
+  .formula-herb-list {
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    margin-top: 5px;
+  }
+  .formula-date { font-size: 0.78rem; color: var(--ink-soft); }
+
+  .row-group-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--sage-deep);
+    margin: 22px 0 10px;
+  }
+
+  .dynamic-row {
+    background: var(--parchment);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+  }
+  .row-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .row-header span {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .remove-row-btn {
+    background: none;
+    border: none;
+    color: var(--rust);
+    font-size: 0.75rem;
+    cursor: pointer;
+    padding: 0;
+  }
+  .dynamic-row input, .dynamic-row select {
+    background: #fff;
+    margin-bottom: 6px;
+  }
+  .row-grid-3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; }
+  .row-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  @media (max-width: 500px) {
+    .row-grid-3, .row-grid-2 { grid-template-columns: 1fr; }
+  }
+
+  .add-row-btn { font-size: 0.8rem; padding: 8px 16px; margin-bottom: 8px; }
+
+  .dispensed-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  @media (max-width: 560px) {
+    .dispensed-grid { grid-template-columns: 1fr 1fr; }
+  }
 </style>
 </head>
 <body>
@@ -414,7 +502,6 @@
     <div class="tab active" data-tab="intake">Intake</div>
     <div class="tab" data-tab="waiver">Waiver</div>
     <div class="tab" data-tab="concerns">Concerns</div>
-    <div class="tab disabled" title="Coming in the next build step">Formulas</div>
   </div>
 
   <!-- INTAKE PANEL -->
@@ -667,13 +754,82 @@
         </div>
       </div>
 
+      <div class="section" id="formulasSection" style="display:none;">
+        <div class="toolbar-row">
+          <h3 style="margin:0;">Formula History</h3>
+          <button type="button" class="primary" id="newFormulaBtn">+ New Formula Version</button>
+        </div>
+        <div class="formula-list" id="formulaList"></div>
+        <div class="placeholder-panel" id="noFormulas" style="display:none;">
+          No formulas logged yet for this concern.
+        </div>
+      </div>
+
     </div>
 
   </div>
-  <div class="panel" id="panel-formulas">
-    <div class="placeholder-panel">Formula history is coming in a later build step.</div>
-  </div>
 </main>
+
+<div class="overlay" id="formulaModalOverlay">
+  <div class="modal formula-modal">
+    <h3 id="formulaModalTitle">New Formula Version</h3>
+    <form id="formulaForm">
+
+      <div class="field-row">
+        <div class="field">
+          <label for="fm_type">Entry type</label>
+          <select id="fm_type">
+            <option value="Revision">Revision (composition changed)</option>
+            <option value="Reorder">Reorder (same formula, rebatched)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="fm_name">Formula name <span class="optional-tag">(optional)</span></label>
+          <input type="text" id="fm_name" placeholder="e.g. Fatigue Formula">
+        </div>
+      </div>
+
+      <div class="row-group-label">Herbs</div>
+      <div id="herbRows"></div>
+      <button type="button" class="secondary add-row-btn" id="addHerbBtn">+ Add Herb</button>
+
+      <div class="row-group-label">Supplements</div>
+      <div id="supplementRows"></div>
+      <button type="button" class="secondary add-row-btn" id="addSupplementBtn">+ Add Supplement</button>
+
+      <div class="row-group-label">Lifestyle Recommendations</div>
+      <div id="lifestyleRows"></div>
+      <button type="button" class="secondary add-row-btn" id="addLifestyleBtn">+ Add Lifestyle Item</button>
+
+      <div class="row-group-label">Dispensed Product</div>
+      <div class="dispensed-grid">
+        <input type="text" id="fm_disp_format" placeholder="Format (tea, tincture, capsule...)">
+        <input type="text" id="fm_disp_batch" placeholder="Batch size">
+        <input type="text" id="fm_disp_price" placeholder="Price">
+        <input type="date" id="fm_disp_date">
+      </div>
+
+      <div class="field" style="margin-top:18px;">
+        <label for="fm_why_private">What changed & why <span class="private-tag">private</span></label>
+        <textarea id="fm_why_private"></textarea>
+      </div>
+      <div class="field">
+        <label for="fm_what_client">What changed <span class="optional-tag">(client-facing, plain language)</span></label>
+        <textarea id="fm_what_client"></textarea>
+      </div>
+      <div class="field">
+        <label for="fm_response">Client-reported response <span class="optional-tag">(fill in next session)</span></label>
+        <textarea id="fm_response"></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="secondary" id="cancelFormulaBtn">Cancel</button>
+        <button type="submit" class="primary" id="saveFormulaBtn">Save Formula</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 
 <div class="overlay" id="sessionModalOverlay">
   <div class="modal session-modal">
@@ -1047,11 +1203,15 @@ I understand that my records will be kept confidential in accordance with my her
     document.getElementById("concernFormView").style.display = "block";
 
     const sessionsSection = document.getElementById("sessionsSection");
+    const formulasSection = document.getElementById("formulasSection");
     if (concern) {
       sessionsSection.style.display = "block";
+      formulasSection.style.display = "block";
       loadSessions(concern.id);
+      loadFormulas(concern.id);
     } else {
       sessionsSection.style.display = "none";
+      formulasSection.style.display = "none";
     }
   }
 
@@ -1205,6 +1365,232 @@ I understand that my records will be kept confidential in accordance with my her
           // Reflect the updated status immediately in the concern form's own status field.
           document.getElementById("c_status").value = statusEl.value;
         }
+      }
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ---------- Formula History ----------
+  let editingFormulaId = null;
+  let editingFormulaVersionNumber = null;
+  let currentFormulas = [];
+
+  function makeRemovableRow(container, html) {
+    const row = document.createElement("div");
+    row.className = "dynamic-row";
+    row.innerHTML = html;
+    row.querySelector(".remove-row-btn").addEventListener("click", () => row.remove());
+    container.appendChild(row);
+    return row;
+  }
+
+  function addHerbRow(herb) {
+    herb = herb || {};
+    makeRemovableRow(document.getElementById("herbRows"), `
+      <div class="row-header"><span>Herb</span><button type="button" class="remove-row-btn">Remove</button></div>
+      <div class="row-grid-3">
+        <input type="text" class="herb-name" placeholder="Herb name (Latin / common)" value="${escapeAttr(herb.name)}">
+        <input type="text" class="herb-ratio" placeholder="Ratio e.g. 1:2" value="${escapeAttr(herb.ratio)}">
+        <input type="text" class="herb-percent" placeholder="% of blend" value="${escapeAttr(herb.percent)}">
+      </div>
+      <div class="row-grid-2">
+        <select class="herb-role">
+          <option value="">Role —</option>
+          <option ${herb.role === "Lead" ? "selected" : ""}>Lead</option>
+          <option ${herb.role === "Supportive" ? "selected" : ""}>Supportive</option>
+          <option ${herb.role === "Synergist" ? "selected" : ""}>Synergist</option>
+        </select>
+        <input type="text" class="herb-dose" placeholder="Dose" value="${escapeAttr(herb.dose)}">
+      </div>
+      <input type="text" class="herb-actions" placeholder="Herbal actions (e.g. anti-inflammatory, bitter)" value="${escapeAttr(herb.actions)}">
+      <input type="text" class="herb-energetics" placeholder="Energetics (e.g. warming, drying)" value="${escapeAttr(herb.energetics)}">
+      <input type="text" class="herb-notes" placeholder="Interaction notes (private)" value="${escapeAttr(herb.notes)}">
+    `);
+  }
+
+  function addSupplementRow(supp) {
+    supp = supp || {};
+    makeRemovableRow(document.getElementById("supplementRows"), `
+      <div class="row-header"><span>Supplement</span><button type="button" class="remove-row-btn">Remove</button></div>
+      <div class="row-grid-2">
+        <input type="text" class="supplement-name" placeholder="Name" value="${escapeAttr(supp.name)}">
+        <input type="text" class="supplement-dose" placeholder="Dose / timing" value="${escapeAttr(supp.dose)}">
+      </div>
+      <input type="text" class="supplement-rationale" placeholder="Rationale" value="${escapeAttr(supp.rationale)}">
+      <input type="text" class="supplement-synergy" placeholder="Synergy notes" value="${escapeAttr(supp.synergy)}">
+    `);
+  }
+
+  function addLifestyleRow(item) {
+    item = item || {};
+    makeRemovableRow(document.getElementById("lifestyleRows"), `
+      <div class="row-header"><span>Lifestyle item</span><button type="button" class="remove-row-btn">Remove</button></div>
+      <input type="text" class="lifestyle-instruction" placeholder="Instruction" value="${escapeAttr(item.instruction)}">
+      <input type="text" class="lifestyle-rationale" placeholder="Rationale" value="${escapeAttr(item.rationale)}">
+    `);
+  }
+
+  function escapeAttr(str) {
+    if (str === undefined || str === null) return "";
+    return String(str).replace(/"/g, "&quot;");
+  }
+
+  function readHerbRows() {
+    return [...document.querySelectorAll("#herbRows .dynamic-row")].map((row) => ({
+      name: row.querySelector(".herb-name").value,
+      ratio: row.querySelector(".herb-ratio").value,
+      percent: row.querySelector(".herb-percent").value,
+      role: row.querySelector(".herb-role").value,
+      dose: row.querySelector(".herb-dose").value,
+      actions: row.querySelector(".herb-actions").value,
+      energetics: row.querySelector(".herb-energetics").value,
+      notes: row.querySelector(".herb-notes").value,
+    })).filter((h) => h.name.trim());
+  }
+
+  function readSupplementRows() {
+    return [...document.querySelectorAll("#supplementRows .dynamic-row")].map((row) => ({
+      name: row.querySelector(".supplement-name").value,
+      dose: row.querySelector(".supplement-dose").value,
+      rationale: row.querySelector(".supplement-rationale").value,
+      synergy: row.querySelector(".supplement-synergy").value,
+    })).filter((s) => s.name.trim());
+  }
+
+  function readLifestyleRows() {
+    return [...document.querySelectorAll("#lifestyleRows .dynamic-row")].map((row) => ({
+      instruction: row.querySelector(".lifestyle-instruction").value,
+      rationale: row.querySelector(".lifestyle-rationale").value,
+    })).filter((l) => l.instruction.trim());
+  }
+
+  function formulaCard(formula) {
+    const el = document.createElement("div");
+    el.className = "formula-card";
+    const typeClass = formula.entry_type === "Reorder" ? "type-reorder" : "type-revision";
+    const herbNames = (formula.herbs || []).map((h) => h.name).filter(Boolean).join(", ");
+    const dateStr = formula.dispensed_date
+      ? new Date(formula.dispensed_date + "T00:00:00").toLocaleDateString()
+      : new Date(formula.created_at).toLocaleDateString();
+    el.innerHTML = `
+      <div class="formula-card-top">
+        <div>
+          <span class="formula-version">v${formula.version_number}${formula.formula_name ? " — " + escapeHtml(formula.formula_name) : ""}</span>
+          <span class="formula-type-badge ${typeClass}">${escapeHtml(formula.entry_type)}</span>
+        </div>
+        <span class="formula-date">${dateStr}</span>
+      </div>
+      <div class="formula-herb-list">${escapeHtml(herbNames || "No herbs listed")}</div>
+    `;
+    el.addEventListener("click", () => openFormulaModal(formula));
+    return el;
+  }
+
+  async function loadFormulas(concernId) {
+    const res = await fetch(`${BACKEND_URL}/api/concerns/${concernId}/formulas`, { credentials: "include" });
+    if (res.status === 401) { window.location.href = "index.html"; return; }
+    currentFormulas = await res.json();
+    const list = document.getElementById("formulaList");
+    const empty = document.getElementById("noFormulas");
+    list.innerHTML = "";
+    if (currentFormulas.length === 0) {
+      empty.style.display = "block";
+    } else {
+      empty.style.display = "none";
+      currentFormulas.forEach((f) => list.appendChild(formulaCard(f)));
+    }
+  }
+
+  function clearDynamicRows() {
+    document.getElementById("herbRows").innerHTML = "";
+    document.getElementById("supplementRows").innerHTML = "";
+    document.getElementById("lifestyleRows").innerHTML = "";
+  }
+
+  function openFormulaModal(formula) {
+    editingFormulaId = formula ? formula.id : null;
+    editingFormulaVersionNumber = formula ? formula.version_number : null;
+    document.getElementById("formulaForm").reset();
+    clearDynamicRows();
+    document.getElementById("formulaModalTitle").textContent = formula ? "Edit Formula Version" : "New Formula Version";
+
+    if (formula) {
+      document.getElementById("fm_type").value = formula.entry_type || "Revision";
+      document.getElementById("fm_name").value = formula.formula_name || "";
+      document.getElementById("fm_disp_format").value = formula.dispensed_format || "";
+      document.getElementById("fm_disp_batch").value = formula.dispensed_batch_size || "";
+      document.getElementById("fm_disp_price").value = formula.dispensed_price || "";
+      document.getElementById("fm_disp_date").value = formula.dispensed_date || "";
+      document.getElementById("fm_why_private").value = formula.changed_why_private || "";
+      document.getElementById("fm_what_client").value = formula.changed_what_client || "";
+      document.getElementById("fm_response").value = formula.client_response || "";
+      (formula.herbs || []).forEach(addHerbRow);
+      (formula.supplements || []).forEach(addSupplementRow);
+      (formula.lifestyle || []).forEach(addLifestyleRow);
+    }
+
+    document.getElementById("formulaModalOverlay").classList.add("visible");
+  }
+
+  function closeFormulaModal() {
+    document.getElementById("formulaModalOverlay").classList.remove("visible");
+  }
+
+  document.getElementById("newFormulaBtn").addEventListener("click", () => openFormulaModal(null));
+  document.getElementById("cancelFormulaBtn").addEventListener("click", closeFormulaModal);
+  document.getElementById("addHerbBtn").addEventListener("click", () => addHerbRow());
+  document.getElementById("addSupplementBtn").addEventListener("click", () => addSupplementRow());
+  document.getElementById("addLifestyleBtn").addEventListener("click", () => addLifestyleRow());
+  document.getElementById("formulaModalOverlay").addEventListener("click", (e) => {
+    if (e.target === document.getElementById("formulaModalOverlay")) closeFormulaModal();
+  });
+
+  document.getElementById("formulaForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById("saveFormulaBtn");
+    btn.disabled = true;
+
+    const entryType = document.getElementById("fm_type").value;
+    let versionNumber;
+    if (editingFormulaId) {
+      versionNumber = editingFormulaVersionNumber;
+    } else {
+      const maxVersion = currentFormulas.reduce((max, f) => Math.max(max, f.version_number || 0), 0);
+      versionNumber = entryType === "Reorder" ? (maxVersion || 1) : maxVersion + 1;
+    }
+
+    const body = {
+      version_number: versionNumber,
+      entry_type: entryType,
+      formula_name: document.getElementById("fm_name").value,
+      herbs: readHerbRows(),
+      supplements: readSupplementRows(),
+      lifestyle: readLifestyleRows(),
+      dispensed_format: document.getElementById("fm_disp_format").value,
+      dispensed_batch_size: document.getElementById("fm_disp_batch").value,
+      dispensed_price: document.getElementById("fm_disp_price").value,
+      dispensed_date: document.getElementById("fm_disp_date").value,
+      changed_why_private: document.getElementById("fm_why_private").value,
+      changed_what_client: document.getElementById("fm_what_client").value,
+      client_response: document.getElementById("fm_response").value,
+    };
+
+    try {
+      const url = editingFormulaId
+        ? `${BACKEND_URL}/api/formulas/${editingFormulaId}`
+        : `${BACKEND_URL}/api/concerns/${currentConcernId}/formulas`;
+      const method = editingFormulaId ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        closeFormulaModal();
+        await loadFormulas(currentConcernId);
       }
     } finally {
       btn.disabled = false;
