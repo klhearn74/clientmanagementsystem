@@ -285,6 +285,115 @@
   @media (max-width: 500px) {
     .tissue-grid { grid-template-columns: 1fr; }
   }
+
+  /* Modal (shared pattern with dashboard.html) */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(61, 50, 38, 0.35);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 10;
+    overflow-y: auto;
+  }
+  .overlay.visible { display: flex; }
+  .modal {
+    background: #FFFEFB;
+    border-radius: 4px;
+    padding: 32px;
+    width: 100%;
+    max-width: 420px;
+    margin: auto;
+  }
+  .modal.session-modal { max-width: 520px; }
+  .modal h3 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 1.2rem;
+    margin: 0 0 20px;
+  }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .modal-actions button { flex: 1; }
+  button.secondary {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--ink-soft);
+    padding: 10px 18px;
+    border-radius: 3px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .steams-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--sage-deep);
+    margin: 18px 0 8px;
+  }
+  .optional-tag {
+    font-weight: 400;
+    color: var(--ink-soft);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .steams-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+  .steams-grid label { font-size: 0.68rem; }
+  .steams-grid input { padding: 8px 6px; text-align: center; }
+
+  @media (max-width: 500px) {
+    .steams-grid { grid-template-columns: repeat(3, 1fr); }
+    .field-row { grid-template-columns: 1fr; }
+  }
+
+  .private-tag {
+    font-size: 0.68rem;
+    font-weight: 400;
+    color: var(--rust);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-left: 4px;
+  }
+
+  .session-list { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+  .session-card {
+    background: #FFFEFB;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px 16px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .session-card:hover { border-color: var(--sage); }
+  .session-date { font-weight: 600; font-size: 0.85rem; }
+  .session-label {
+    font-size: 0.72rem;
+    color: var(--sage-deep);
+    background: var(--sage-pale);
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-left: 8px;
+  }
+  .session-snippet {
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    margin-top: 3px;
+  }
 </style>
 </head>
 <body>
@@ -546,6 +655,18 @@
           <button type="submit" class="primary" id="saveConcernBtn">Save Concern</button>
         </div>
       </form>
+
+      <div class="section" id="sessionsSection" style="display:none;">
+        <div class="toolbar-row">
+          <h3 style="margin:0;">Session Notes</h3>
+          <button type="button" class="primary" id="newSessionBtn">+ New Session</button>
+        </div>
+        <div class="session-list" id="sessionList"></div>
+        <div class="placeholder-panel" id="noSessions" style="display:none;">
+          No sessions logged yet for this concern.
+        </div>
+      </div>
+
     </div>
 
   </div>
@@ -553,6 +674,78 @@
     <div class="placeholder-panel">Formula history is coming in a later build step.</div>
   </div>
 </main>
+
+<div class="overlay" id="sessionModalOverlay">
+  <div class="modal session-modal">
+    <h3 id="sessionModalTitle">New Session</h3>
+    <form id="sessionForm">
+      <div class="field-row">
+        <div class="field">
+          <label for="sn_date">Date</label>
+          <input type="date" id="sn_date" required>
+        </div>
+        <div class="field">
+          <label for="sn_label">Visit type</label>
+          <select id="sn_label">
+            <option>Initial</option>
+            <option>Check-in</option>
+            <option>Follow-up</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="steams-label">STEAMS quick-capture <span class="optional-tag">(optional, 1–10)</span></div>
+      <div class="steams-grid">
+        <div class="field"><label for="sn_stress">Stress</label><input type="text" id="sn_stress" inputmode="numeric"></div>
+        <div class="field"><label for="sn_temp">Temp</label><input type="text" id="sn_temp" inputmode="numeric"></div>
+        <div class="field"><label for="sn_energy">Energy</label><input type="text" id="sn_energy" inputmode="numeric"></div>
+        <div class="field"><label for="sn_appetite">Appetite</label><input type="text" id="sn_appetite" inputmode="numeric"></div>
+        <div class="field"><label for="sn_mood">Mood</label><input type="text" id="sn_mood" inputmode="numeric"></div>
+        <div class="field"><label for="sn_sleep">Sleep</label><input type="text" id="sn_sleep" inputmode="numeric"></div>
+      </div>
+
+      <div class="field">
+        <label for="sn_subjective">S — Subjective <span class="private-tag">private</span></label>
+        <textarea id="sn_subjective" placeholder="Client's own words — what's changed, how they're feeling"></textarea>
+      </div>
+      <div class="field">
+        <label for="sn_objective">O — Objective <span class="private-tag">private</span></label>
+        <textarea id="sn_objective" placeholder="Anything measured or observed"></textarea>
+      </div>
+      <div class="field">
+        <label for="sn_assessment">A — Assessment <span class="private-tag">private</span></label>
+        <textarea id="sn_assessment" placeholder="Clinical reasoning, patterns, root-cause thinking"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="sn_status">Update concern status to</label>
+        <select id="sn_status">
+          <option value="">Leave unchanged</option>
+          <option>Initial</option>
+          <option>Improved</option>
+          <option>No change</option>
+          <option>Not addressed</option>
+          <option>Resolved</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="sn_plan_private">P — Plan (private notes)</label>
+        <textarea id="sn_plan_private" placeholder="Full reasoning, dosing logic, things to watch"></textarea>
+      </div>
+      <div class="field">
+        <label for="sn_plan_client">P — Plan (client-facing summary)</label>
+        <textarea id="sn_plan_client" placeholder="Plain-language version for the client portal"></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="secondary" id="cancelSessionBtn">Cancel</button>
+        <button type="submit" class="primary" id="saveSessionBtn">Save Session</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 
 <script>
   const BACKEND_URL = "https://practitioner-api.val.run";
@@ -835,8 +1028,11 @@ I understand that my records will be kept confidential in accordance with my her
     }
   }
 
+  let currentConcernId = null;
+
   function openConcernForm(concern) {
     editingConcernId = concern ? concern.id : null;
+    currentConcernId = concern ? concern.id : null;
     document.getElementById("concernForm").reset();
 
     if (concern) {
@@ -849,6 +1045,14 @@ I understand that my records will be kept confidential in accordance with my her
     updateTissueLabels();
     document.getElementById("concernsListView").style.display = "none";
     document.getElementById("concernFormView").style.display = "block";
+
+    const sessionsSection = document.getElementById("sessionsSection");
+    if (concern) {
+      sessionsSection.style.display = "block";
+      loadSessions(concern.id);
+    } else {
+      sessionsSection.style.display = "none";
+    }
   }
 
   function closeConcernForm() {
@@ -886,6 +1090,121 @@ I understand that my records will be kept confidential in accordance with my her
       if (res.ok) {
         closeConcernForm();
         await loadConcerns();
+      }
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ---------- Session Notes ----------
+  let editingSessionId = null;
+
+  const SESSION_FIELD_IDS = [
+    ["sn_date", "visit_date"],
+    ["sn_label", "visit_label"],
+    ["sn_stress", "steams_stress"],
+    ["sn_temp", "steams_temperature"],
+    ["sn_energy", "steams_energy"],
+    ["sn_appetite", "steams_appetite"],
+    ["sn_mood", "steams_mood"],
+    ["sn_sleep", "steams_sleep"],
+    ["sn_subjective", "subjective"],
+    ["sn_objective", "objective"],
+    ["sn_assessment", "assessment"],
+    ["sn_plan_private", "plan_private"],
+    ["sn_plan_client", "plan_client"],
+  ];
+
+  function sessionCard(session) {
+    const el = document.createElement("div");
+    el.className = "session-card";
+    const dateStr = new Date(session.visit_date + "T00:00:00").toLocaleDateString();
+    const snippet = (session.assessment || session.subjective || "").slice(0, 80);
+    el.innerHTML = `
+      <div>
+        <span class="session-date">${escapeHtml(dateStr)}</span>
+        <span class="session-label">${escapeHtml(session.visit_label || "Visit")}</span>
+        <div class="session-snippet">${escapeHtml(snippet)}</div>
+      </div>
+    `;
+    el.addEventListener("click", () => openSessionModal(session));
+    return el;
+  }
+
+  async function loadSessions(concernId) {
+    const res = await fetch(`${BACKEND_URL}/api/concerns/${concernId}/sessions`, { credentials: "include" });
+    if (res.status === 401) { window.location.href = "index.html"; return; }
+    const sessions = await res.json();
+    const list = document.getElementById("sessionList");
+    const empty = document.getElementById("noSessions");
+    list.innerHTML = "";
+    if (sessions.length === 0) {
+      empty.style.display = "block";
+    } else {
+      empty.style.display = "none";
+      sessions.forEach((s) => list.appendChild(sessionCard(s)));
+    }
+  }
+
+  function openSessionModal(session) {
+    editingSessionId = session ? session.id : null;
+    document.getElementById("sessionForm").reset();
+    document.getElementById("sessionModalTitle").textContent = session ? "Edit Session" : "New Session";
+
+    if (session) {
+      SESSION_FIELD_IDS.forEach(([elId, key]) => {
+        const el = document.getElementById(elId);
+        if (el && session[key] !== undefined && session[key] !== null) el.value = session[key];
+      });
+    } else {
+      document.getElementById("sn_date").value = new Date().toISOString().slice(0, 10);
+    }
+
+    document.getElementById("sessionModalOverlay").classList.add("visible");
+  }
+
+  function closeSessionModal() {
+    document.getElementById("sessionModalOverlay").classList.remove("visible");
+  }
+
+  document.getElementById("newSessionBtn").addEventListener("click", () => openSessionModal(null));
+  document.getElementById("cancelSessionBtn").addEventListener("click", closeSessionModal);
+  document.getElementById("sessionModalOverlay").addEventListener("click", (e) => {
+    if (e.target === document.getElementById("sessionModalOverlay")) closeSessionModal();
+  });
+
+  document.getElementById("sessionForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById("saveSessionBtn");
+    btn.disabled = true;
+
+    const body = {};
+    SESSION_FIELD_IDS.forEach(([elId, key]) => {
+      const el = document.getElementById(elId);
+      if (el) body[key] = el.value;
+    });
+    const statusEl = document.getElementById("sn_status");
+    if (statusEl.value) body.updated_status = statusEl.value;
+
+    try {
+      const url = editingSessionId
+        ? `${BACKEND_URL}/api/sessions/${editingSessionId}`
+        : `${BACKEND_URL}/api/concerns/${currentConcernId}/sessions`;
+      const method = editingSessionId ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        closeSessionModal();
+        await loadSessions(currentConcernId);
+        if (statusEl.value) {
+          // Reflect the updated status immediately in the concern form's own status field.
+          document.getElementById("c_status").value = statusEl.value;
+        }
       }
     } finally {
       btn.disabled = false;
