@@ -215,6 +215,60 @@
     padding: 60px 20px;
     font-size: 0.9rem;
   }
+
+  .toolbar-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+
+  .concern-list { display: flex; flex-direction: column; gap: 10px; }
+  .concern-card {
+    background: #FFFEFB;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 16px 20px;
+    cursor: pointer;
+  }
+  .concern-card:hover { border-color: var(--sage); }
+  .concern-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .concern-name { font-weight: 600; font-size: 0.95rem; }
+  .concern-meta {
+    color: var(--ink-soft);
+    font-size: 0.8rem;
+    margin-top: 4px;
+  }
+
+  .status-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .status-badge.status-initial { background: var(--sage-pale); color: var(--sage-deep); }
+  .status-badge.status-improved { background: #E4EFE0; color: #3F6B3A; }
+  .status-badge.status-nochange { background: #F1EAD8; color: #8A6E2F; }
+  .status-badge.status-notaddressed { background: #EFE8D8; color: var(--ink-soft); }
+  .status-badge.status-resolved { background: #E2E7EA; color: #45545C; }
+
+  .tissue-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+
+  @media (max-width: 500px) {
+    .tissue-grid { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
@@ -234,7 +288,7 @@
   <div class="tabs">
     <div class="tab active" data-tab="intake">Intake</div>
     <div class="tab" data-tab="waiver">Waiver</div>
-    <div class="tab disabled" title="Coming in the next build step">Concerns</div>
+    <div class="tab" data-tab="concerns">Concerns</div>
     <div class="tab disabled" title="Coming in the next build step">Formulas</div>
   </div>
 
@@ -326,8 +380,124 @@
     </div>
   </div>
 
+  <!-- CONCERNS PANEL -->
   <div class="panel" id="panel-concerns">
-    <div class="placeholder-panel">Concerns & session notes are coming in the next build step.</div>
+
+    <div id="concernsListView">
+      <div class="toolbar-row">
+        <span></span>
+        <button class="primary" id="newConcernBtn">+ New Concern</button>
+      </div>
+      <div class="concern-list" id="concernList"></div>
+      <div class="placeholder-panel" id="noConcerns" style="display:none;">
+        No concerns tracked yet for this client.
+      </div>
+    </div>
+
+    <div id="concernFormView" style="display:none;">
+      <form id="concernForm">
+        <div class="section">
+          <h3>Complaint</h3>
+          <div class="field">
+            <label for="c_primary">Primary complaint</label>
+            <input type="text" id="c_primary" required>
+          </div>
+          <div class="field">
+            <label for="c_secondary">Related / secondary complaints</label>
+            <textarea id="c_secondary" placeholder="Other symptoms that seem connected to the same root cause"></textarea>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Root Cause & Goals</h3>
+          <div class="field">
+            <label for="c_root">Root cause</label>
+            <input type="text" id="c_root">
+          </div>
+          <div class="field">
+            <label for="c_goals">Therapeutic goals</label>
+            <textarea id="c_goals" placeholder="One per line"></textarea>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Tissue State</h3>
+          <div class="tissue-grid">
+            <div class="field">
+              <label for="c_hotcold">Hot / Cold</label>
+              <select id="c_hotcold">
+                <option value="">—</option>
+                <option value="Hot">Hot</option>
+                <option value="Neutral">Neutral</option>
+                <option value="Cold">Cold</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="c_dampdry">Damp / Dry</label>
+              <select id="c_dampdry">
+                <option value="">—</option>
+                <option value="Damp">Damp</option>
+                <option value="Neutral">Neutral</option>
+                <option value="Dry">Dry</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="c_tenselax">Tense / Lax</label>
+              <select id="c_tenselax">
+                <option value="">—</option>
+                <option value="Tense">Tense</option>
+                <option value="Neutral">Neutral</option>
+                <option value="Lax">Lax</option>
+              </select>
+            </div>
+          </div>
+          <div class="field" style="margin-top:14px;">
+            <label for="c_organs">Organ systems / affinities involved</label>
+            <input type="text" id="c_organs" placeholder="e.g. digestion, liver, nervous system">
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Status & Timeline</h3>
+          <div class="field">
+            <label for="c_status">Status</label>
+            <select id="c_status">
+              <option>Initial</option>
+              <option>Improved</option>
+              <option>No change</option>
+              <option>Not addressed</option>
+              <option>Resolved</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="c_timeline">Expected timeline / milestone</label>
+            <input type="text" id="c_timeline" placeholder="e.g. improvement expected around 40 days">
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Safety & Notes (private)</h3>
+          <div class="field">
+            <label for="c_referral">Referral / escalation criteria</label>
+            <textarea id="c_referral"></textarea>
+          </div>
+          <div class="field">
+            <label for="c_contra">Contraindications considered</label>
+            <textarea id="c_contra"></textarea>
+          </div>
+          <div class="field">
+            <label for="c_future">Future considerations</label>
+            <textarea id="c_future" placeholder="Ideas held in reserve, not yet actioned"></textarea>
+          </div>
+        </div>
+
+        <div class="save-bar">
+          <button type="button" class="secondary" id="cancelConcernBtn">Cancel</button>
+          <button type="submit" class="primary" id="saveConcernBtn">Save Concern</button>
+        </div>
+      </form>
+    </div>
+
   </div>
   <div class="panel" id="panel-formulas">
     <div class="placeholder-panel">Formula history is coming in a later build step.</div>
@@ -513,9 +683,133 @@ I understand that my records will be kept confidential in accordance with my her
     window.location.href = "index.html";
   });
 
+  // ---------- Concerns ----------
+  const CONCERN_FIELD_IDS = [
+    ["c_primary", "primary_complaint"],
+    ["c_secondary", "secondary_complaints"],
+    ["c_root", "root_cause"],
+    ["c_goals", "goals"],
+    ["c_hotcold", "tissue_hot_cold"],
+    ["c_dampdry", "tissue_damp_dry"],
+    ["c_tenselax", "tissue_tense_lax"],
+    ["c_organs", "organ_systems"],
+    ["c_status", "status"],
+    ["c_timeline", "expected_timeline"],
+    ["c_referral", "referral_criteria"],
+    ["c_contra", "contraindications"],
+    ["c_future", "future_considerations"],
+  ];
+
+  let editingConcernId = null;
+
+  function statusClass(status) {
+    return "status-" + (status || "Initial").toLowerCase().replace(/\s+/g, "");
+  }
+
+  function tissueSummary(concern) {
+    const parts = [concern.tissue_hot_cold, concern.tissue_damp_dry, concern.tissue_tense_lax]
+      .filter((v) => v && v !== "Neutral");
+    return parts.length ? parts.join(" · ") : "";
+  }
+
+  function concernCard(concern) {
+    const el = document.createElement("div");
+    el.className = "concern-card";
+    const meta = [tissueSummary(concern), concern.root_cause].filter(Boolean).join(" — ");
+    el.innerHTML = `
+      <div class="concern-card-top">
+        <div>
+          <div class="concern-name">${escapeHtml(concern.primary_complaint)}</div>
+          <div class="concern-meta">${escapeHtml(meta)}</div>
+        </div>
+        <span class="status-badge ${statusClass(concern.status)}">${escapeHtml(concern.status || "Initial")}</span>
+      </div>
+    `;
+    el.addEventListener("click", () => openConcernForm(concern));
+    return el;
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str ?? "";
+    return div.innerHTML;
+  }
+
+  async function loadConcerns() {
+    const res = await fetch(`${BACKEND_URL}/api/clients/${clientId}/concerns`, { credentials: "include" });
+    if (res.status === 401) { window.location.href = "index.html"; return; }
+    const concerns = await res.json();
+    const list = document.getElementById("concernList");
+    const empty = document.getElementById("noConcerns");
+    list.innerHTML = "";
+    if (concerns.length === 0) {
+      empty.style.display = "block";
+    } else {
+      empty.style.display = "none";
+      concerns.forEach((c) => list.appendChild(concernCard(c)));
+    }
+  }
+
+  function openConcernForm(concern) {
+    editingConcernId = concern ? concern.id : null;
+    document.getElementById("concernForm").reset();
+
+    if (concern) {
+      CONCERN_FIELD_IDS.forEach(([elId, key]) => {
+        const el = document.getElementById(elId);
+        if (el && concern[key] !== undefined && concern[key] !== null) el.value = concern[key];
+      });
+    }
+
+    document.getElementById("concernsListView").style.display = "none";
+    document.getElementById("concernFormView").style.display = "block";
+  }
+
+  function closeConcernForm() {
+    editingConcernId = null;
+    document.getElementById("concernFormView").style.display = "none";
+    document.getElementById("concernsListView").style.display = "block";
+  }
+
+  document.getElementById("newConcernBtn").addEventListener("click", () => openConcernForm(null));
+  document.getElementById("cancelConcernBtn").addEventListener("click", closeConcernForm);
+
+  document.getElementById("concernForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById("saveConcernBtn");
+    btn.disabled = true;
+
+    const body = {};
+    CONCERN_FIELD_IDS.forEach(([elId, key]) => {
+      const el = document.getElementById(elId);
+      if (el) body[key] = el.value;
+    });
+
+    try {
+      const url = editingConcernId
+        ? `${BACKEND_URL}/api/concerns/${editingConcernId}`
+        : `${BACKEND_URL}/api/clients/${clientId}/concerns`;
+      const method = editingConcernId ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        closeConcernForm();
+        await loadConcerns();
+      }
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
   loadClient();
   loadIntake();
   loadWaiver();
+  loadConcerns();
 </script>
 
 </body>
