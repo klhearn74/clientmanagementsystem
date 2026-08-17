@@ -63,6 +63,11 @@
 
   .client-header {
     margin-bottom: 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
   }
   .client-header h2 {
     font-family: 'Fraunces', serif;
@@ -83,6 +88,21 @@
   }
   .waiver-badge.signed { background: var(--sage-pale); color: var(--sage-deep); }
   .waiver-badge.unsigned { background: #FBEFEC; color: var(--rust); }
+
+  button.report-btn {
+    background: #fff;
+    border: 1px solid var(--sage);
+    color: var(--sage-deep);
+    padding: 10px 18px;
+    border-radius: 3px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 600;
+    font-size: 0.82rem;
+    cursor: pointer;
+    white-space: nowrap;
+    margin-top: 4px;
+  }
+  button.report-btn:hover { background: var(--sage-pale); }
 
   .tabs {
     display: flex;
@@ -497,6 +517,19 @@
   @media (max-width: 560px) {
     .prep-nested-dispensed { grid-template-columns: 1fr; }
   }
+
+  .modal.report-modal { max-width: 440px; }
+  .report-date-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; max-height: 320px; overflow-y: auto; }
+  .report-date-option {
+    background: var(--parchment);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 12px 14px;
+    cursor: pointer;
+  }
+  .report-date-option:hover { border-color: var(--sage); }
+  .report-date-option .rd-date { font-weight: 600; font-size: 0.88rem; }
+  .report-date-option .rd-labels { font-size: 0.78rem; color: var(--ink-soft); margin-top: 3px; }
 </style>
 </head>
 
@@ -509,9 +542,12 @@
 
 <main>
   <div class="client-header">
-    <h2 id="clientName">Loading…</h2>
-    <div class="meta" id="clientMeta"></div>
-    <div id="waiverBadgeWrap"></div>
+    <div>
+      <h2 id="clientName">Loading…</h2>
+      <div class="meta" id="clientMeta"></div>
+      <div id="waiverBadgeWrap"></div>
+    </div>
+    <button class="report-btn" id="generateReportBtn">Generate Visit Report</button>
   </div>
 
   <div class="tabs">
@@ -800,6 +836,13 @@
         </select>
       </div>
 
+      <div class="field">
+        <label for="fm_session">Link to session note <span class="optional-tag">(so this shows up in that visit's report)</span></label>
+        <select id="fm_session">
+          <option value="">— Not linked to a specific session —</option>
+        </select>
+      </div>
+
       <div class="row-group-label">Preparations</div>
       <div class="section-hint">Each preparation (a tincture, a tea, etc.) gets its own name, herb list, and dispensed-product info. Add more than one if you're sending the client several forms of the same formula.</div>
       <div id="preparationRows"></div>
@@ -903,6 +946,20 @@
         <button type="submit" class="primary" id="saveSessionBtn">Save Session</button>
       </div>
     </form>
+  </div>
+</div>
+
+<div class="overlay" id="reportModalOverlay">
+  <div class="modal report-modal">
+    <h3>Generate Visit Report</h3>
+    <p class="section-hint" style="margin-bottom:14px;">Pick a visit date. The report will bundle every Health Goal touched that day into one document.</p>
+    <div class="report-date-list" id="reportDateList"></div>
+    <div class="placeholder-panel" id="noReportDates" style="display:none;">
+      No session notes logged yet for this client.
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="secondary" id="cancelReportBtn">Cancel</button>
+    </div>
   </div>
 </div>
 
@@ -1262,6 +1319,7 @@ I understand that my records will be kept confidential in accordance with my her
 
   // ---------- Session Notes ----------
   let editingSessionId = null;
+  let currentSessions = [];
 
   const SESSION_FIELD_IDS = [
     ["sn_date", "visit_date"],
@@ -1299,6 +1357,7 @@ I understand that my records will be kept confidential in accordance with my her
     const res = await fetch(`${BACKEND_URL}/api/concerns/${concernId}/sessions`, { credentials: "include" });
     if (res.status === 401) { window.location.href = "index.html"; return; }
     const sessions = await res.json();
+    currentSessions = sessions;
     const list = document.getElementById("sessionList");
     const empty = document.getElementById("noSessions");
     list.innerHTML = "";
@@ -1575,12 +1634,29 @@ I understand that my records will be kept confidential in accordance with my her
     document.getElementById("lifestyleRows").innerHTML = "";
   }
 
+  // Populate the "Link to session note" dropdown from the sessions
+  // already loaded for this concern (currentSessions), most recent first.
+  function populateSessionLinkSelect(selectedSessionId) {
+    const select = document.getElementById("fm_session");
+    select.innerHTML = `<option value="">— Not linked to a specific session —</option>`;
+    currentSessions.forEach((s) => {
+      const dateStr = new Date(s.visit_date + "T00:00:00").toLocaleDateString();
+      const opt = document.createElement("option");
+      opt.value = s.id;
+      opt.textContent = `${dateStr} — ${s.visit_label || "Visit"}`;
+      if (selectedSessionId && s.id === selectedSessionId) opt.selected = true;
+      select.appendChild(opt);
+    });
+  }
+
   function openFormulaModal(formula) {
     editingFormulaId = formula ? formula.id : null;
     editingFormulaVersionNumber = formula ? formula.version_number : null;
     document.getElementById("formulaForm").reset();
     clearDynamicRows();
     document.getElementById("formulaModalTitle").textContent = formula ? "Edit Formula Version" : "New Formula Version";
+
+    populateSessionLinkSelect(formula ? formula.session_note_id : null);
 
     if (formula) {
       document.getElementById("fm_type").value = formula.entry_type || "Initial";
@@ -1594,6 +1670,11 @@ I understand that my records will be kept confidential in accordance with my her
       // First formula for this concern → default to "Initial" rather than
       // forcing a Revision/Reorder choice that doesn't make sense yet.
       document.getElementById("fm_type").value = currentFormulas.length === 0 ? "Initial" : "Revision";
+      // If there's a session already open/most recent, default to linking
+      // to it — most formulas get logged during the session they're for.
+      if (currentSessions.length > 0) {
+        document.getElementById("fm_session").value = currentSessions[0].id;
+      }
     }
 
     document.getElementById("formulaModalOverlay").classList.add("visible");
@@ -1629,6 +1710,7 @@ I understand that my records will be kept confidential in accordance with my her
     const body = {
       version_number: versionNumber,
       entry_type: entryType,
+      session_note_id: document.getElementById("fm_session").value || null,
       preparations: readPreparations(),
       supplements: readSupplementRows(),
       lifestyle: readLifestyleRows(),
@@ -1655,6 +1737,47 @@ I understand that my records will be kept confidential in accordance with my her
       }
     } finally {
       btn.disabled = false;
+    }
+  });
+
+  // ---------- Visit Report ----------
+  document.getElementById("generateReportBtn").addEventListener("click", async () => {
+    const list = document.getElementById("reportDateList");
+    const empty = document.getElementById("noReportDates");
+    list.innerHTML = "";
+    empty.style.display = "none";
+
+    const res = await fetch(`${BACKEND_URL}/api/clients/${clientId}/session-dates`, { credentials: "include" });
+    if (res.status === 401) { window.location.href = "index.html"; return; }
+    const dates = await res.json();
+
+    if (dates.length === 0) {
+      empty.style.display = "block";
+    } else {
+      dates.forEach((d) => {
+        const el = document.createElement("div");
+        el.className = "report-date-option";
+        const dateStr = new Date(d.visit_date + "T00:00:00").toLocaleDateString();
+        el.innerHTML = `
+          <div class="rd-date">${escapeHtml(dateStr)}</div>
+          <div class="rd-labels">${escapeHtml(d.labels.join(", "))}</div>
+        `;
+        el.addEventListener("click", () => {
+          window.location.href = `report.html?client=${clientId}&date=${d.visit_date}`;
+        });
+        list.appendChild(el);
+      });
+    }
+
+    document.getElementById("reportModalOverlay").classList.add("visible");
+  });
+
+  document.getElementById("cancelReportBtn").addEventListener("click", () => {
+    document.getElementById("reportModalOverlay").classList.remove("visible");
+  });
+  document.getElementById("reportModalOverlay").addEventListener("click", (e) => {
+    if (e.target === document.getElementById("reportModalOverlay")) {
+      document.getElementById("reportModalOverlay").classList.remove("visible");
     }
   });
 

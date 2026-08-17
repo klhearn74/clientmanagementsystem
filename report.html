@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visit Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Montserrat:wght@400;500;600&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --parchment: #F7F3EA;
+    --ink: #3D3226;
+    --ink-soft: #6B5E4F;
+    --sage: #6B7A4F;
+    --sage-deep: #55613F;
+    --sage-pale: #E9EDE2;
+    --border: #DCD3BC;
+    --rust: #A34A3A;
+    --gold: #B08A4E;
+    --gold-deep: #96794A;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--parchment);
+    font-family: 'Montserrat', sans-serif;
+    color: var(--ink);
+    min-height: 100vh;
+  }
+
+  .toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 32px;
+    background: #FFFEFB;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  .toolbar .back-link {
+    color: var(--ink-soft);
+    text-decoration: none;
+    font-size: 0.85rem;
+  }
+  .toolbar .back-link:hover { color: var(--sage-deep); }
+  .toolbar-actions { display: flex; gap: 10px; }
+  button.primary {
+    background: var(--sage);
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 3px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  button.primary:hover { background: var(--sage-deep); }
+  .toolbar-hint {
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+  }
+
+  .page-wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 40px 24px 100px;
+  }
+
+  .report {
+    background: #FFFEFB;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 56px 52px;
+  }
+
+  .report-header {
+    text-align: center;
+    margin-bottom: 36px;
+  }
+  .report-header .icon-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
+  }
+  .practice-name {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 1.5rem;
+    margin: 0;
+    color: var(--ink);
+  }
+  .report-title {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.82rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--sage-deep);
+    margin-top: 4px;
+  }
+
+  .visit-meta {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .visit-meta .vm-name { font-weight: 600; color: var(--ink); }
+
+  .greeting {
+    font-size: 0.95rem;
+    line-height: 1.7;
+    margin-bottom: 30px;
+  }
+
+  [contenteditable="true"] {
+    outline: none;
+    border-radius: 3px;
+    transition: background 0.15s ease;
+  }
+  [contenteditable="true"]:hover,
+  [contenteditable="true"]:focus {
+    background: var(--sage-pale);
+    box-shadow: 0 0 0 6px var(--sage-pale);
+  }
+
+  .goal-block {
+    margin-bottom: 30px;
+  }
+  .goal-tag {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 1.1rem;
+    color: var(--sage-deep);
+    margin: 0 0 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--sage-pale);
+  }
+  .goal-plan {
+    font-size: 0.92rem;
+    line-height: 1.7;
+    white-space: pre-line;
+  }
+
+  .formula-card {
+    background: var(--sage-pale);
+    border-radius: 4px;
+    padding: 18px 20px;
+    margin-top: 16px;
+  }
+  .formula-card-title {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--sage-deep);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .formula-entry-badge {
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 2px 9px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background: #fff;
+    color: var(--sage-deep);
+  }
+  .prep-block { margin-bottom: 12px; }
+  .prep-block:last-child { margin-bottom: 0; }
+  .prep-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+  }
+  .prep-herbs {
+    font-size: 0.83rem;
+    color: var(--ink-soft);
+    line-height: 1.6;
+  }
+  .prep-dispensed {
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    margin-top: 3px;
+    font-style: italic;
+  }
+  .formula-changed-note {
+    font-size: 0.85rem;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0,0,0,0.06);
+    line-height: 1.6;
+  }
+
+  .section-heading {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 1.1rem;
+    color: var(--sage-deep);
+    margin: 34px 0 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--sage-pale);
+  }
+
+  .lifestyle-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .lifestyle-list li {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    margin-bottom: 10px;
+    padding-left: 18px;
+    position: relative;
+  }
+  .lifestyle-list li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 9px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--gold);
+  }
+  .lifestyle-rationale {
+    color: var(--ink-soft);
+    font-size: 0.85rem;
+  }
+
+  .next-steps-box {
+    font-size: 0.9rem;
+    line-height: 1.7;
+    min-height: 60px;
+  }
+  .next-steps-box:empty::before {
+    content: "Click to add any next steps for this visit…";
+    color: #B7AC96;
+    font-style: italic;
+  }
+
+  .signoff {
+    margin-top: 44px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .signoff-line {
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+  }
+  .signature {
+    font-family: 'Caveat', cursive;
+    font-size: 2.1rem;
+    color: var(--sage-deep);
+    margin: 4px 0 2px;
+  }
+  .practitioner-credentials {
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+  }
+
+  .disclaimer {
+    margin-top: 36px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+    line-height: 1.5;
+    text-align: center;
+  }
+
+  .loading, .error-msg {
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--ink-soft);
+  }
+
+  @media print {
+    .toolbar { display: none; }
+    body { background: #fff; }
+    .page-wrap { padding: 0; max-width: none; }
+    .report { border: none; border-radius: 0; padding: 0.4in; }
+    [contenteditable="true"]:hover,
+    [contenteditable="true"]:focus {
+      background: transparent;
+      box-shadow: none;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <a href="#" class="back-link" id="backLink">← Back to client</a>
+  <div class="toolbar-actions">
+    <span class="toolbar-hint">Click any text to edit before printing</span>
+    <button class="primary" id="printBtn">Print / Export PDF</button>
+  </div>
+</div>
+
+<div class="page-wrap">
+  <div id="loadingMsg" class="loading">Loading visit report…</div>
+  <div id="errorMsg" class="error-msg" style="display:none;">Couldn't load this visit report.</div>
+
+  <div class="report" id="reportBody" style="display:none;">
+    <div class="report-header">
+      <div class="icon-wrap">
+        <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 26 L28 26 L26 36 L14 36 Z" fill="#96794A"/>
+          <ellipse cx="20" cy="26" rx="8" ry="2" fill="#B08A4E"/>
+          <path d="M20 26 C20 26 19 15 20 9" stroke="#55613F" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <ellipse cx="20" cy="9" rx="4.5" ry="6" fill="#6B7A4F" transform="rotate(0 20 9)"/>
+          <path d="M20 26 C20 26 12 20 8 15" stroke="#55613F" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <ellipse cx="8" cy="15" rx="4.2" ry="5.6" fill="#6B7A4F" transform="rotate(-35 8 15)"/>
+          <path d="M20 26 C20 26 28 20 32 15" stroke="#55613F" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <ellipse cx="32" cy="15" rx="4.2" ry="5.6" fill="#6B7A4F" transform="rotate(35 32 15)"/>
+          <path d="M20 26 C20 26 14 22 11 20" stroke="#55613F" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+          <ellipse cx="11" cy="20" rx="3.4" ry="4.6" fill="#7C8B5E" transform="rotate(-45 11 20)"/>
+          <path d="M20 26 C20 26 26 22 29 20" stroke="#55613F" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+          <ellipse cx="29" cy="20" rx="3.4" ry="4.6" fill="#7C8B5E" transform="rotate(45 29 20)"/>
+        </svg>
+      </div>
+      <h1 class="practice-name" id="practiceName">Kayla Hearn</h1>
+      <div class="report-title">Visit Summary</div>
+    </div>
+
+    <div class="visit-meta">
+      <span class="vm-name" id="metaClientName"></span> · <span id="metaDate"></span>
+    </div>
+
+    <div class="greeting" contenteditable="true" id="greetingText"></div>
+
+    <div id="goalsContainer"></div>
+
+    <div id="lifestyleSection" style="display:none;">
+      <div class="section-heading">Lifestyle Recommendations</div>
+      <ul class="lifestyle-list" id="lifestyleList"></ul>
+    </div>
+
+    <div class="section-heading">Next Steps</div>
+    <div class="next-steps-box" contenteditable="true" id="nextStepsBox"></div>
+
+    <div class="signoff">
+      <div class="signoff-line">Warmly,</div>
+      <div class="signature">Kayla</div>
+      <div class="practitioner-credentials" id="practitionerCredentials"></div>
+    </div>
+
+    <div class="disclaimer">
+      This summary is educational and complementary in nature, and is not a substitute for medical diagnosis or treatment. Please continue to consult your physician or other qualified healthcare provider for any medical concerns.
+    </div>
+  </div>
+</div>
+
+<script>
+  const BACKEND_URL = "https://practitioner-api.val.run";
+  const params = new URLSearchParams(window.location.search);
+  const clientId = params.get("client");
+  const visitDate = params.get("date");
+
+  document.getElementById("backLink").href = clientId ? `client.html?id=${clientId}` : "dashboard.html";
+
+  if (!clientId || !visitDate) {
+    document.getElementById("loadingMsg").style.display = "none";
+    document.getElementById("errorMsg").style.display = "block";
+    document.getElementById("errorMsg").textContent = "Missing client or date.";
+  } else {
+    loadReport();
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str ?? "";
+    return div.innerHTML;
+  }
+
+  function formatDate(dateStr) {
+    return new Date(dateStr + "T00:00:00").toLocaleDateString(undefined, {
+      year: "numeric", month: "long", day: "numeric",
+    });
+  }
+
+  function firstName(fullName) {
+    return (fullName || "").trim().split(/\s+/)[0] || "there";
+  }
+
+  function renderFormulaCard(formula) {
+    if (!formula) return "";
+    const preps = (formula.preparations || []).map((p) => {
+      const herbLines = (p.herbs || [])
+        .filter((h) => h.name)
+        .map((h) => `${escapeHtml(h.name)}${h.dose ? " — " + escapeHtml(h.dose) : ""}`)
+        .join("<br>");
+      const dispensedBits = [p.dispensed_batch_size, p.dispensed_date ? formatDate(p.dispensed_date) : null]
+        .filter(Boolean).join(" · ");
+      return `
+        <div class="prep-block">
+          <div class="prep-name">${escapeHtml(p.type || "Preparation")}${p.name ? " — " + escapeHtml(p.name) : ""}</div>
+          ${herbLines ? `<div class="prep-herbs">${herbLines}</div>` : ""}
+          ${dispensedBits ? `<div class="prep-dispensed">${escapeHtml(dispensedBits)}</div>` : ""}
+        </div>
+      `;
+    }).join("");
+
+    return `
+      <div class="formula-card">
+        <div class="formula-card-title">
+          Your Formula
+          <span class="formula-entry-badge">${escapeHtml(formula.entry_type || "")}</span>
+        </div>
+        ${preps}
+        ${formula.changed_what_client ? `<div class="formula-changed-note" contenteditable="true">${escapeHtml(formula.changed_what_client)}</div>` : ""}
+      </div>
+    `;
+  }
+
+  async function loadReport() {
+    const res = await fetch(`${BACKEND_URL}/api/clients/${clientId}/visit-report?date=${visitDate}`, { credentials: "include" });
+    if (res.status === 401) { window.location.href = "index.html"; return; }
+    if (!res.ok) {
+      document.getElementById("loadingMsg").style.display = "none";
+      document.getElementById("errorMsg").style.display = "block";
+      return;
+    }
+    const data = await res.json();
+
+    document.getElementById("practiceName").textContent = data.practitioner_name || "Kayla Hearn";
+    document.getElementById("metaClientName").textContent = data.client_name || "";
+    document.getElementById("metaDate").textContent = formatDate(data.visit_date);
+    document.getElementById("practitionerCredentials").textContent = data.practitioner_credentials || "";
+    document.getElementById("greetingText").textContent = `Hi ${firstName(data.client_name)},\n\nHere's a summary from our visit together.`;
+
+    const goalsContainer = document.getElementById("goalsContainer");
+    goalsContainer.innerHTML = "";
+    (data.goals || []).forEach((goal) => {
+      const block = document.createElement("div");
+      block.className = "goal-block";
+      block.innerHTML = `
+        <div class="goal-tag">${escapeHtml(goal.label)}</div>
+        <div class="goal-plan" contenteditable="true">${escapeHtml(goal.plan_client || "")}</div>
+        ${renderFormulaCard(goal.formula)}
+      `;
+      goalsContainer.appendChild(block);
+    });
+
+    const lifestyleItems = (data.lifestyle_recommendations || []).filter((l) => l.instruction && l.instruction.trim());
+    if (lifestyleItems.length > 0) {
+      document.getElementById("lifestyleSection").style.display = "block";
+      const list = document.getElementById("lifestyleList");
+      list.innerHTML = "";
+      lifestyleItems.forEach((item) => {
+        const li = document.createElement("li");
+        li.setAttribute("contenteditable", "true");
+        li.innerHTML = `${escapeHtml(item.instruction)}${item.rationale ? `<div class="lifestyle-rationale">${escapeHtml(item.rationale)}</div>` : ""}`;
+        list.appendChild(li);
+      });
+    }
+
+    document.getElementById("loadingMsg").style.display = "none";
+    document.getElementById("reportBody").style.display = "block";
+  }
+
+  document.getElementById("printBtn").addEventListener("click", () => window.print());
+</script>
+
+</body>
+</html>
