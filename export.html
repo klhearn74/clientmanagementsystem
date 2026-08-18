@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Client Data Export</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --parchment: #F7F3EA;
+    --ink: #3D3226;
+    --ink-soft: #6B5E4F;
+    --sage: #6B7A4F;
+    --sage-deep: #55613F;
+    --sage-pale: #E9EDE2;
+    --border: #DCD3BC;
+    --rust: #A34A3A;
+    --gold: #B08A4E;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--parchment);
+    font-family: 'Montserrat', sans-serif;
+    color: var(--ink);
+    min-height: 100vh;
+  }
+
+  .toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 32px;
+    background: #FFFEFB;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .toolbar .back-link {
+    color: var(--ink-soft);
+    text-decoration: none;
+    font-size: 0.85rem;
+  }
+  .toolbar .back-link:hover { color: var(--sage-deep); }
+  .toolbar-actions { display: flex; gap: 10px; align-items: center; }
+  button.primary {
+    background: var(--sage);
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 3px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  button.primary:hover { background: var(--sage-deep); }
+  button.secondary {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--ink-soft);
+    padding: 9px 18px;
+    border-radius: 3px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  button.secondary:hover { border-color: var(--sage); color: var(--sage-deep); }
+
+  .page-wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 32px 24px 100px;
+  }
+
+  .doc {
+    background: #FFFEFB;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 40px 44px;
+  }
+  .doc + .doc { margin-top: 28px; }
+
+  .doc-header {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--sage-pale);
+  }
+  .doc-header h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 1.5rem;
+    margin: 0 0 4px;
+  }
+  .doc-header .sub {
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+  }
+
+  .section-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 1.1rem;
+    color: var(--sage-deep);
+    margin: 28px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--sage-pale);
+  }
+  .section-title:first-of-type { margin-top: 0; }
+
+  .kv-grid {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 6px 16px;
+    font-size: 0.85rem;
+  }
+  .kv-grid .k { color: var(--ink-soft); }
+  .kv-grid .v { white-space: pre-line; }
+  @media (max-width: 560px) {
+    .kv-grid { grid-template-columns: 1fr; }
+    .kv-grid .k { font-weight: 600; margin-top: 8px; }
+  }
+
+  .concern-block {
+    background: var(--parchment);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+  }
+  .concern-title { font-weight: 600; font-size: 1rem; margin-bottom: 8px; }
+  .status-pill {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 9px;
+    border-radius: 20px;
+    background: var(--sage-pale);
+    color: var(--sage-deep);
+    margin-left: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .sub-block {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 14px 16px;
+    margin-top: 10px;
+  }
+  .sub-block-title {
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--sage-deep);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 8px;
+  }
+  .sub-block + .sub-block { margin-top: 8px; }
+
+  .prep-name { font-weight: 600; font-size: 0.85rem; margin-top: 8px; }
+  .herb-line { font-size: 0.8rem; color: var(--ink-soft); margin-left: 10px; }
+
+  .empty-note {
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+
+  .snapshot-embed {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 16px;
+    margin-top: 10px;
+    background: #fff;
+    font-size: 0.85rem;
+  }
+
+  .loading, .error-msg {
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--ink-soft);
+  }
+
+  @media print {
+    .toolbar { display: none; }
+    body { background: #fff; }
+    .page-wrap { padding: 0; max-width: none; }
+    .doc { border: none; border-radius: 0; padding: 0.4in; page-break-after: always; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <a href="#" class="back-link" id="backLink">← Back</a>
+  <div class="toolbar-actions">
+    <button class="secondary" id="downloadJsonBtn">Download raw JSON backup</button>
+    <button class="primary" id="printBtn">Print / Export PDF</button>
+  </div>
+</div>
+
+<div class="page-wrap">
+  <div id="loadingMsg" class="loading">Loading…</div>
+  <div id="errorMsg" class="error-msg" style="display:none;">Couldn't load this data.</div>
+  <div id="docsContainer"></div>
+</div>
+
+<script>
+  const BACKEND_URL = "https://practitioner-api.val.run";
+  const params = new URLSearchParams(window.location.search);
+  const clientId = params.get("client");
+  const isAll = params.get("all") === "1";
+
+  document.getElementById("backLink").href = clientId ? `client.html?id=${clientId}` : "dashboard.html";
+
+  const INTAKE_LABELS = {
+    i_reason: "Reason for visit / main concerns",
+    i_practitioners: "Other practitioners involved",
+    i_medications: "Current medications / supplements",
+    s_digestion: "Digestion", s_skin: "Skin", s_immune: "Immune",
+    s_cardiovascular: "Cardiovascular", s_respiratory: "Respiratory", s_urinary: "Urinary",
+    s_reproductive: "Reproductive / Hormonal", s_nervous: "Nervous system / Emotional",
+    s_sleep: "Sleep (systems review)", s_energy: "Energy", s_headaches: "Headaches",
+    s_earseyesmouth: "Ears / Eyes / Mouth", s_musculoskeletal: "Musculoskeletal",
+    i_water: "Water intake",
+    l_exercise: "Exercise", l_stress: "Stress", l_sleep: "Sleep (lifestyle)",
+    i_family: "Family history", i_allergies: "Allergies / sensitivities",
+    diet_sugar: "Diet — Sugar / refined carbs", diet_alcohol: "Diet — Alcohol",
+    diet_caffeine: "Diet — Caffeine", diet_processed: "Diet — Processed food",
+    diet_vegetables: "Diet — Vegetables", diet_protein: "Diet — Protein sources",
+    diet_eatingout: "Diet — Eating out",
+  };
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str ?? "";
+    return div.innerHTML;
+  }
+
+  function formatDate(dateStr) {
+    if (!dateStr) return "";
+    return new Date(dateStr.length <= 10 ? dateStr + "T00:00:00" : dateStr).toLocaleDateString();
+  }
+
+  function kvRow(label, value) {
+    if (value === undefined || value === null || String(value).trim() === "") return "";
+    return `<div class="k">${escapeHtml(label)}</div><div class="v">${escapeHtml(value)}</div>`;
+  }
+
+  function renderIntake(intake) {
+    if (!intake) return `<div class="empty-note">No intake form on file.</div>`;
+    const rows = Object.entries(intake.responses || {})
+      .map(([key, val]) => kvRow(INTAKE_LABELS[key] || key, val))
+      .filter(Boolean)
+      .join("");
+    return rows
+      ? `<div class="kv-grid">${rows}</div>`
+      : `<div class="empty-note">Intake form on file but no responses recorded.</div>`;
+  }
+
+  function renderWaivers(waivers) {
+    if (!waivers || waivers.length === 0) return `<div class="empty-note">No waiver signed.</div>`;
+    return waivers.map((w) => `<div class="kv-grid">${kvRow("Signed", formatDate(w.signed_at))}</div>`).join("");
+  }
+
+  function renderHerb(h) {
+    const bits = [h.ratio, h.percent ? h.percent + "%" : null, h.role, h.dose].filter(Boolean).join(" · ");
+    return `<div class="herb-line">${escapeHtml(h.name || "Unnamed herb")}${bits ? " — " + escapeHtml(bits) : ""}${h.actions ? " · " + escapeHtml(h.actions) : ""}${h.energetics ? " · " + escapeHtml(h.energetics) : ""}${h.notes ? " · caution: " + escapeHtml(h.notes) : ""}</div>`;
+  }
+
+  function renderFormula(f) {
+    const preps = (f.preparations || []).map((p) => `
+      <div class="prep-name">${escapeHtml(p.type || "Preparation")}${p.name ? " — " + escapeHtml(p.name) : ""}</div>
+      ${(p.herbs || []).map(renderHerb).join("")}
+      ${(p.dispensed_batch_size || p.dispensed_price || p.dispensed_date) ? `<div class="herb-line">Dispensed: ${[p.dispensed_batch_size, p.dispensed_price, formatDate(p.dispensed_date)].filter(Boolean).join(" · ")}</div>` : ""}
+    `).join("");
+    const supplements = (f.supplements || []).map((s) => `<div class="herb-line">${escapeHtml(s.name)}${s.dose ? " — " + escapeHtml(s.dose) : ""}${s.notes ? " · " + escapeHtml(s.notes) : ""}</div>`).join("");
+    const lifestyle = (f.lifestyle || []).map((l) => `<div class="herb-line">${escapeHtml(l.instruction)}${l.rationale ? " — " + escapeHtml(l.rationale) : ""}</div>`).join("");
+    return `
+      <div class="sub-block">
+        <div class="sub-block-title">Formula v${f.version_number} — ${escapeHtml(f.entry_type)}</div>
+        ${preps || `<div class="empty-note">No preparations listed.</div>`}
+        ${supplements ? `<div class="prep-name">Supplements</div>${supplements}` : ""}
+        ${lifestyle ? `<div class="prep-name">Lifestyle</div>${lifestyle}` : ""}
+        ${f.changed_why_private ? `<div class="kv-grid" style="margin-top:8px;">${kvRow("What changed & why (private)", f.changed_why_private)}</div>` : ""}
+        ${f.changed_what_client ? `<div class="kv-grid">${kvRow("What changed (client-facing)", f.changed_what_client)}</div>` : ""}
+        ${f.client_response ? `<div class="kv-grid">${kvRow("Client-reported response", f.client_response)}</div>` : ""}
+      </div>
+    `;
+  }
+
+  function renderSession(s) {
+    const steams = [
+      s.steams_stress && `Stress ${s.steams_stress}`,
+      s.steams_temperature && `Temp ${s.steams_temperature}`,
+      s.steams_energy && `Energy ${s.steams_energy}`,
+      s.steams_appetite && `Appetite ${s.steams_appetite}`,
+      s.steams_mood && `Mood ${s.steams_mood}`,
+      s.steams_sleep && `Sleep ${s.steams_sleep}`,
+    ].filter(Boolean).join(" · ");
+    return `
+      <div class="sub-block">
+        <div class="sub-block-title">${formatDate(s.visit_date)} — ${escapeHtml(s.visit_label || "Visit")}</div>
+        <div class="kv-grid">
+          ${kvRow("STEAMS", steams)}
+          ${kvRow("Subjective", s.subjective)}
+          ${kvRow("Objective", s.objective)}
+          ${kvRow("Assessment", s.assessment)}
+          ${kvRow("Plan (private)", s.plan_private)}
+          ${kvRow("Plan (client-facing)", s.plan_client)}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderConcern(concern) {
+    return `
+      <div class="concern-block">
+        <div class="concern-title">${escapeHtml(concern.primary_complaint)}<span class="status-pill">${escapeHtml(concern.status || "Initial")}</span></div>
+        <div class="kv-grid">
+          ${kvRow("Secondary complaints", concern.secondary_complaints)}
+          ${kvRow("Root cause", concern.root_cause)}
+          ${kvRow("Goals", concern.goals)}
+          ${kvRow("Organ systems", concern.organ_systems)}
+          ${kvRow("Expected timeline", concern.expected_timeline)}
+          ${kvRow("Referral criteria", concern.referral_criteria)}
+          ${kvRow("Contraindications", concern.contraindications)}
+          ${kvRow("Future considerations", concern.future_considerations)}
+        </div>
+        ${(concern.session_notes || []).length > 0 ? `<div class="prep-name" style="margin-top:14px;">Session Notes</div>${concern.session_notes.map(renderSession).join("")}` : ""}
+        ${(concern.formula_versions || []).length > 0 ? `<div class="prep-name" style="margin-top:14px;">Formula History</div>${concern.formula_versions.map(renderFormula).join("")}` : ""}
+      </div>
+    `;
+  }
+
+  function renderClientDoc(bundle) {
+    const c = bundle.client;
+    const doc = document.createElement("div");
+    doc.className = "doc";
+    doc.innerHTML = `
+      <div class="doc-header">
+        <h1>${escapeHtml(c.full_name)}</h1>
+        <div class="sub">${[c.email, c.phone, c.dob ? "DOB " + formatDate(c.dob) : null].filter(Boolean).map(escapeHtml).join(" · ")}</div>
+      </div>
+
+      <div class="section-title">Waiver</div>
+      ${renderWaivers(bundle.waivers)}
+
+      <div class="section-title">Intake</div>
+      ${renderIntake(bundle.intake)}
+
+      <div class="section-title">Health Goals</div>
+      ${(bundle.concerns || []).length > 0 ? bundle.concerns.map(renderConcern).join("") : `<div class="empty-note">No health goals logged.</div>`}
+
+      <div class="section-title">Visit Reports Sent</div>
+      ${(bundle.visit_reports || []).length > 0
+        ? bundle.visit_reports.map((vr) => `<div class="snapshot-embed">${vr.content}</div>`).join("")
+        : `<div class="empty-note">No visit reports generated yet.</div>`}
+    `;
+    return doc;
+  }
+
+  let lastLoadedData = null;
+
+  async function loadExport() {
+    const container = document.getElementById("docsContainer");
+    container.innerHTML = "";
+
+    if (isAll) {
+      const res = await fetch(`${BACKEND_URL}/api/export/all`, { credentials: "include" });
+      if (res.status === 401) { window.location.href = "index.html"; return; }
+      if (!res.ok) { showError(); return; }
+      const data = await res.json();
+      lastLoadedData = data;
+      if ((data.clients || []).length === 0) {
+        container.innerHTML = `<div class="doc"><div class="empty-note">No clients yet.</div></div>`;
+      } else {
+        data.clients.forEach((bundle) => container.appendChild(renderClientDoc(bundle)));
+      }
+    } else if (clientId) {
+      const res = await fetch(`${BACKEND_URL}/api/clients/${clientId}/export`, { credentials: "include" });
+      if (res.status === 401) { window.location.href = "index.html"; return; }
+      if (!res.ok) { showError(); return; }
+      const data = await res.json();
+      lastLoadedData = data;
+      container.appendChild(renderClientDoc(data));
+    } else {
+      showError();
+      return;
+    }
+
+    document.getElementById("loadingMsg").style.display = "none";
+  }
+
+  function showError() {
+    document.getElementById("loadingMsg").style.display = "none";
+    document.getElementById("errorMsg").style.display = "block";
+  }
+
+  document.getElementById("printBtn").addEventListener("click", () => window.print());
+
+  document.getElementById("downloadJsonBtn").addEventListener("click", () => {
+    if (!lastLoadedData) return;
+    const blob = new Blob([JSON.stringify(lastLoadedData, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const namePart = isAll ? "all_clients" : (lastLoadedData.client?.full_name || "client").replace(/[^a-z0-9]+/gi, "_").toLowerCase();
+    a.download = `${namePart}_export_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  loadExport();
+</script>
+
+</body>
+</html>
