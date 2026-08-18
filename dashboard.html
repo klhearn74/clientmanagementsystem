@@ -230,7 +230,10 @@
 <main>
   <div class="toolbar">
     <h2>Clients</h2>
-    <button class="primary" id="addClientBtn">+ Add Client</button>
+    <div style="display:flex;gap:8px;">
+      <button class="secondary" id="exportAllBtn">Export All Data</button>
+      <button class="primary" id="addClientBtn">+ Add Client</button>
+    </div>
   </div>
 
   <div class="search-wrap">
@@ -421,6 +424,31 @@
   document.getElementById("logoutBtn").addEventListener("click", async () => {
     await fetch(`${BACKEND_URL}/auth/logout`, { method: "POST", credentials: "include" });
     window.location.href = "index.html";
+  });
+
+  document.getElementById("exportAllBtn").addEventListener("click", async () => {
+    const btn = document.getElementById("exportAllBtn");
+    const originalText = btn.textContent;
+    btn.textContent = "Exporting…";
+    btn.disabled = true;
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/export/all`, { credentials: "include" });
+      if (res.status === 401) { window.location.href = "index.html"; return; }
+      if (!res.ok) return;
+      const data = await res.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `all_clients_export_${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } finally {
+      btn.textContent = originalText;
+      btn.disabled = false;
+    }
   });
 
   loadPractitioner();

@@ -104,6 +104,13 @@
   }
   button.report-btn:hover { background: var(--sage-pale); }
 
+  .header-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
   .tabs {
     display: flex;
     gap: 4px;
@@ -556,7 +563,10 @@
       <div class="meta" id="clientMeta"></div>
       <div id="waiverBadgeWrap"></div>
     </div>
-    <button class="report-btn" id="generateReportBtn">Generate Visit Report</button>
+    <div class="header-actions">
+      <button class="report-btn" id="exportClientBtn">Export Data</button>
+      <button class="report-btn" id="generateReportBtn">Generate Visit Report</button>
+    </div>
   </div>
 
   <div class="tabs">
@@ -1811,6 +1821,37 @@ I understand that my records will be kept confidential in accordance with my her
         await loadFormulas(currentConcernId);
       }
     } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ---------- Data Export ----------
+  function downloadJSON(filename, dataObj) {
+    const blob = new Blob([JSON.stringify(dataObj, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  document.getElementById("exportClientBtn").addEventListener("click", async () => {
+    const btn = document.getElementById("exportClientBtn");
+    const originalText = btn.textContent;
+    btn.textContent = "Exporting…";
+    btn.disabled = true;
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/clients/${clientId}/export`, { credentials: "include" });
+      if (res.status === 401) { window.location.href = "index.html"; return; }
+      if (!res.ok) return;
+      const data = await res.json();
+      const safeName = (data.client?.full_name || "client").replace(/[^a-z0-9]+/gi, "_").toLowerCase();
+      downloadJSON(`${safeName}_export_${new Date().toISOString().slice(0, 10)}.json`, data);
+    } finally {
+      btn.textContent = originalText;
       btn.disabled = false;
     }
   });
