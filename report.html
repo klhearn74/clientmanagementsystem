@@ -58,10 +58,24 @@
     cursor: pointer;
   }
   button.primary:hover { background: var(--sage-deep); }
+  button.secondary {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--ink-soft);
+    padding: 9px 18px;
+    border-radius: 3px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  button.secondary:hover { border-color: var(--sage); color: var(--sage-deep); }
   .toolbar-hint {
     font-size: 0.78rem;
     color: var(--ink-soft);
+    transition: color 0.3s ease;
   }
+  .toolbar-hint.saved { color: var(--sage-deep); font-weight: 600; }
 
   .page-wrap {
     max-width: 720px;
@@ -299,7 +313,8 @@
 <div class="toolbar">
   <a href="#" class="back-link" id="backLink">← Back to client</a>
   <div class="toolbar-actions">
-    <span class="toolbar-hint">Click any text to edit before printing</span>
+    <span class="toolbar-hint" id="saveStatus">Click any text to edit before printing</span>
+    <button class="secondary" id="saveBtn">Save</button>
     <button class="primary" id="printBtn">Print / Export PDF</button>
   </div>
 </div>
@@ -420,16 +435,7 @@
     `;
   }
 
-  async function loadReport() {
-    const res = await fetch(`${BACKEND_URL}/api/clients/${clientId}/visit-report?date=${visitDate}`, { credentials: "include" });
-    if (res.status === 401) { window.location.href = "index.html"; return; }
-    if (!res.ok) {
-      document.getElementById("loadingMsg").style.display = "none";
-      document.getElementById("errorMsg").style.display = "block";
-      return;
-    }
-    const data = await res.json();
-
+  function renderFreshDraft(data) {
     document.getElementById("practiceName").textContent = data.practitioner_name || "Kayla Hearn";
     document.getElementById("metaClientName").textContent = data.client_name || "";
     document.getElementById("metaDate").textContent = formatDate(data.visit_date);
@@ -461,12 +467,66 @@
         list.appendChild(li);
       });
     }
+  }
+
+  async function loadReport() {
+    // First check whether a saved snapshot already exists for this
+    // client + date — if so, load that exact version (preserving any
+    // past edits) instead of regenerating a fresh draft.
+    const savedRes = await fetch(`${BACKEND_URL}/api/clients/${clientId}/visit-report/saved?date=${visitDate}`, { credentials: "include" });
+    if (savedRes.status === 401) { window.location.href = "index.html"; return; }
+    const saved = savedRes.ok ? await savedRes.json() : null;
+
+    if (saved && saved.content) {
+      document.getElementById("reportBody").innerHTML = saved.content;
+      document.getElementById("loadingMsg").style.display = "none";
+      document.getElementById("reportBody").style.display = "block";
+      return;
+    }
+
+    const res = await fetch(`${BACKEND_URL}/api/clients/${clientId}/visit-report?date=${visitDate}`, { credentials: "include" });
+    if (res.status === 401) { window.location.href = "index.html"; return; }
+    if (!res.ok) {
+      document.getElementById("loadingMsg").style.display = "none";
+      document.getElementById("errorMsg").style.display = "block";
+      return;
+    }
+    const data = await res.json();
+    renderFreshDraft(data);
 
     document.getElementById("loadingMsg").style.display = "none";
     document.getElementById("reportBody").style.display = "block";
+
+    // Save an initial snapshot right away so a record exists from the
+    // start, even before any manual edits are made.
+    await saveSnapshot(true);
   }
 
-  document.getElementById("printBtn").addEventListener("click", () => window.print());
+  async function saveSnapshot(silent) {
+    const content = document.getElementById("reportBody").innerHTML;
+    const res = await fetch(`${BACKEND_URL}/api/clients/${clientId}/visit-report/saved?date=${visitDate}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ content }),
+    });
+    if (res.ok && !silent) {
+      const status = document.getElementById("saveStatus");
+      status.textContent = "Saved ✓";
+      status.classList.add("saved");
+      setTimeout(() => {
+        status.textContent = "Click any text to edit before printing";
+        status.classList.remove("saved");
+      }, 2000);
+    }
+    return res.ok;
+  }
+
+  document.getElementById("saveBtn").addEventListener("click", () => saveSnapshot(false));
+  document.getElementById("printBtn").addEventListener("click", async () => {
+    await saveSnapshot(true);
+    window.print();
+  });
 </script>
 
 </body>

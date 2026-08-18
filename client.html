@@ -373,6 +373,15 @@
   }
   .steams-grid label { font-size: 0.68rem; }
   .steams-grid input { padding: 8px 6px; text-align: center; }
+  .steams-prev-hint {
+    font-size: 0.68rem;
+    color: var(--ink-soft);
+    text-align: center;
+    margin-top: 4px;
+    min-height: 14px;
+  }
+  .steams-prev-hint .delta-up { color: var(--sage-deep); font-weight: 600; }
+  .steams-prev-hint .delta-down { color: var(--rust); font-weight: 600; }
 
   @media (max-width: 500px) {
     .steams-grid { grid-template-columns: repeat(3, 1fr); }
@@ -899,12 +908,12 @@
 
       <div class="steams-label">STEAMS quick-capture <span class="optional-tag">(optional, 1–10)</span></div>
       <div class="steams-grid">
-        <div class="field"><label for="sn_stress">Stress</label><input type="text" id="sn_stress" inputmode="numeric"></div>
-        <div class="field"><label for="sn_temp">Temp</label><input type="text" id="sn_temp" inputmode="numeric"></div>
-        <div class="field"><label for="sn_energy">Energy</label><input type="text" id="sn_energy" inputmode="numeric"></div>
-        <div class="field"><label for="sn_appetite">Appetite</label><input type="text" id="sn_appetite" inputmode="numeric"></div>
-        <div class="field"><label for="sn_mood">Mood</label><input type="text" id="sn_mood" inputmode="numeric"></div>
-        <div class="field"><label for="sn_sleep">Sleep</label><input type="text" id="sn_sleep" inputmode="numeric"></div>
+        <div class="field"><label for="sn_stress">Stress</label><input type="text" id="sn_stress" inputmode="numeric"><div class="steams-prev-hint" id="hint_stress"></div></div>
+        <div class="field"><label for="sn_temp">Temp</label><input type="text" id="sn_temp" inputmode="numeric"><div class="steams-prev-hint" id="hint_temp"></div></div>
+        <div class="field"><label for="sn_energy">Energy</label><input type="text" id="sn_energy" inputmode="numeric"><div class="steams-prev-hint" id="hint_energy"></div></div>
+        <div class="field"><label for="sn_appetite">Appetite</label><input type="text" id="sn_appetite" inputmode="numeric"><div class="steams-prev-hint" id="hint_appetite"></div></div>
+        <div class="field"><label for="sn_mood">Mood</label><input type="text" id="sn_mood" inputmode="numeric"><div class="steams-prev-hint" id="hint_mood"></div></div>
+        <div class="field"><label for="sn_sleep">Sleep</label><input type="text" id="sn_sleep" inputmode="numeric"><div class="steams-prev-hint" id="hint_sleep"></div></div>
       </div>
 
       <div class="field">
@@ -1369,6 +1378,71 @@ I understand that my records will be kept confidential in accordance with my her
     }
   }
 
+  // STEAMS progress comparison — finds whichever session came right
+  // before the one being viewed/created (chronologically), so the
+  // practitioner can see last time's numbers while entering today's,
+  // without leaving this modal.
+  const STEAMS_HINT_MAP = [
+    ["sn_stress", "steams_stress", "hint_stress"],
+    ["sn_temp", "steams_temperature", "hint_temp"],
+    ["sn_energy", "steams_energy", "hint_energy"],
+    ["sn_appetite", "steams_appetite", "hint_appetite"],
+    ["sn_mood", "steams_mood", "hint_mood"],
+    ["sn_sleep", "steams_sleep", "hint_sleep"],
+  ];
+
+  function getPreviousSession(session) {
+    // currentSessions is sorted newest-first (visit_date DESC).
+    if (!session) {
+      return currentSessions.length > 0 ? currentSessions[0] : null;
+    }
+    const idx = currentSessions.findIndex((s) => s.id === session.id);
+    if (idx === -1 || idx + 1 >= currentSessions.length) return null;
+    return currentSessions[idx + 1];
+  }
+
+  function renderSteamsHints(previousSession) {
+    STEAMS_HINT_MAP.forEach(([inputId, key, hintId]) => {
+      const hintEl = document.getElementById(hintId);
+      const prevVal = previousSession ? previousSession[key] : null;
+      hintEl.dataset.prev = prevVal ?? "";
+      updateSteamsDelta(inputId, key, hintId);
+    });
+  }
+
+  function updateSteamsDelta(inputId, key, hintId) {
+    const hintEl = document.getElementById(hintId);
+    const prevRaw = hintEl.dataset.prev;
+    const currentRaw = document.getElementById(inputId).value;
+    const prevNum = prevRaw !== "" ? parseFloat(prevRaw) : null;
+    const currentNum = currentRaw !== "" ? parseFloat(currentRaw) : null;
+
+    if (prevNum === null && currentNum === null) {
+      hintEl.textContent = "";
+      return;
+    }
+    if (prevNum === null) {
+      hintEl.textContent = "No previous value";
+      return;
+    }
+    if (currentNum === null || isNaN(currentNum)) {
+      hintEl.textContent = `Last: ${prevNum}`;
+      return;
+    }
+    const diff = currentNum - prevNum;
+    if (diff === 0) {
+      hintEl.innerHTML = `${prevNum} → ${currentNum} (no change)`;
+    } else if (diff > 0) {
+      hintEl.innerHTML = `${prevNum} → ${currentNum} <span class="delta-up">↑ ${Math.abs(diff)}</span>`;
+    } else {
+      hintEl.innerHTML = `${prevNum} → ${currentNum} <span class="delta-down">↓ ${Math.abs(diff)}</span>`;
+    }
+  }
+
+  STEAMS_HINT_MAP.forEach(([inputId, key, hintId]) => {
+    document.getElementById(inputId).addEventListener("input", () => updateSteamsDelta(inputId, key, hintId));
+  });
+
   function openSessionModal(session) {
     editingSessionId = session ? session.id : null;
     document.getElementById("sessionForm").reset();
@@ -1383,6 +1457,7 @@ I understand that my records will be kept confidential in accordance with my her
       document.getElementById("sn_date").value = new Date().toISOString().slice(0, 10);
     }
 
+    renderSteamsHints(getPreviousSession(session));
     document.getElementById("sessionModalOverlay").classList.add("visible");
   }
 
