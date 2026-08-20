@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intake Form</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --parchment: #F7F3EA;
+    --ink: #3D3226;
+    --ink-soft: #6B5E4F;
+    --sage: #6B7A4F;
+    --sage-deep: #55613F;
+    --sage-pale: #E9EDE2;
+    --border: #DCD3BC;
+    --rust: #A34A3A;
+    --gold: #B08A4E;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--parchment);
+    font-family: 'Montserrat', sans-serif;
+    color: var(--ink);
+    min-height: 100vh;
+  }
+
+  .page-wrap {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 48px 20px 100px;
+  }
+
+  .intro-header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .intro-header .icon-wrap { display: flex; justify-content: center; margin-bottom: 10px; }
+  .intro-header h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 1.5rem;
+    margin: 0 0 4px;
+  }
+  .client-label {
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+  }
+
+  .intro-card {
+    background: #FFFEFB;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 26px 28px;
+    margin-bottom: 24px;
+    font-size: 0.9rem;
+    line-height: 1.7;
+  }
+  .intro-card p { margin: 0 0 14px; }
+  .intro-card p:last-child { margin-bottom: 0; }
+
+  .section {
+    background: #FFFEFB;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 24px;
+    margin-bottom: 18px;
+  }
+  .section h3 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 1.05rem;
+    margin: 0 0 16px;
+    color: var(--sage-deep);
+  }
+
+  .field { margin-bottom: 16px; }
+  .field:last-child { margin-bottom: 0; }
+  label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--ink);
+    margin-bottom: 6px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+  input, textarea, select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.9rem;
+    background: var(--parchment);
+    color: var(--ink);
+  }
+  textarea { min-height: 64px; resize: vertical; }
+  input:focus, textarea:focus, select:focus { outline: 2px solid var(--sage); outline-offset: 1px; background: #fff; }
+
+  .diet-grid {
+    display: grid;
+    grid-template-columns: 1fr 140px;
+    gap: 10px 16px;
+    align-items: center;
+  }
+  .diet-grid .diet-label { font-size: 0.85rem; }
+
+  .save-indicator {
+    position: sticky;
+    bottom: 20px;
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+    pointer-events: none;
+  }
+  .save-pill {
+    background: var(--sage-deep);
+    color: #fff;
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+  }
+  .save-pill.visible { opacity: 1; }
+
+  .loading, .error-card {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--ink-soft);
+  }
+  .error-card {
+    background: #FFFEFB;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+  <div id="loadingMsg" class="loading">Loading…</div>
+  <div id="errorCard" class="error-card" style="display:none;">
+    This link isn't valid. Please contact your practitioner for a new one.
+  </div>
+
+  <div id="formWrap" style="display:none;">
+    <div class="intro-header">
+      <div class="icon-wrap">
+        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36">
+          <path d="M12 30 L28 30 L25.5 38 L14.5 38 Z" fill="#B08A4E"/>
+          <rect x="11" y="27.5" width="18" height="3" rx="1.5" fill="#96794A"/>
+          <ellipse cx="13.9" cy="23.9" rx="3" ry="7.5" fill="#6B7A4F" stroke="#55613F" stroke-width="0.6" transform="rotate(-50 13.9 23.9)"/>
+          <ellipse cx="16.6" cy="21.8" rx="3" ry="7.8" fill="#6B7A4F" stroke="#55613F" stroke-width="0.6" transform="rotate(-25 16.6 21.8)"/>
+          <ellipse cx="20" cy="20.5" rx="3.2" ry="8.5" fill="#55613F" stroke="#3D3226" stroke-width="0.4" transform="rotate(0 20 20.5)"/>
+          <ellipse cx="23.4" cy="21.8" rx="3" ry="7.8" fill="#6B7A4F" stroke="#55613F" stroke-width="0.6" transform="rotate(25 23.4 21.8)"/>
+          <ellipse cx="26.1" cy="23.9" rx="3" ry="7.5" fill="#6B7A4F" stroke="#55613F" stroke-width="0.6" transform="rotate(50 26.1 23.9)"/>
+        </svg>
+      </div>
+      <h1>Intake Form</h1>
+      <div class="client-label" id="clientLabel"></div>
+    </div>
+
+    <div class="intro-card">
+      <p>Hi, I'm Kayla, your herbalist here in Calgary, trained through the Wild Rose College of Herbal Medicine.</p>
+      <p>Herbalism looks at the whole person, not just the symptom that brought you in. Your digestion, sleep, stress, and daily patterns are all connected — so understanding the full picture is how we get to the root of what's going on, rather than just managing what's on the surface.</p>
+      <p>This intake helps me start building that picture before we even meet.</p>
+    </div>
+
+    <form id="intakeForm">
+      <div class="section">
+        <h3>Reason for Visit</h3>
+        <div class="field">
+          <label for="i_reason">What brings you in today? What are you hoping to get help with?</label>
+          <textarea id="i_reason"></textarea>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Current Care</h3>
+        <div class="field">
+          <label for="i_practitioners">Are you currently seeing any other practitioners (doctor, dietitian, etc.)? If so, who and for what?</label>
+          <textarea id="i_practitioners"></textarea>
+        </div>
+        <div class="field">
+          <label for="i_medications">What medications or supplements are you currently taking, and at what dose (if known)?</label>
+          <textarea id="i_medications"></textarea>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Systems Review</h3>
+        <div class="field"><label for="s_digestion">How's your digestion?</label><textarea id="s_digestion" placeholder="e.g. bloating, regularity, discomfort"></textarea></div>
+        <div class="field"><label for="s_skin">Any skin concerns?</label><textarea id="s_skin" placeholder="e.g. rashes, acne, dryness, eczema"></textarea></div>
+        <div class="field"><label for="s_immune">How often do you get sick, and how well do you recover?</label><textarea id="s_immune"></textarea></div>
+        <div class="field"><label for="s_cardiovascular">Any concerns with your heart or circulation?</label><textarea id="s_cardiovascular" placeholder="e.g. blood pressure, cold hands/feet"></textarea></div>
+        <div class="field"><label for="s_respiratory">Any breathing concerns?</label><textarea id="s_respiratory" placeholder="e.g. shortness of breath, congestion, allergies"></textarea></div>
+        <div class="field"><label for="s_urinary">Any urinary concerns?</label><textarea id="s_urinary" placeholder="e.g. frequency, discomfort"></textarea></div>
+        <div class="field"><label for="s_reproductive">Any hormonal or reproductive concerns you'd like to share?</label><textarea id="s_reproductive"></textarea></div>
+        <div class="field"><label for="s_menstrual">How would you describe your menstrual cycle?</label><textarea id="s_menstrual" placeholder="e.g. regular, irregular, absent, painful cramps, mood changes"></textarea></div>
+        <div class="field"><label for="s_nervous">How's your stress, mood, or emotional wellbeing lately?</label><textarea id="s_nervous"></textarea></div>
+        <div class="field"><label for="s_sleep">How's your sleep?</label><textarea id="s_sleep" placeholder="e.g. falling asleep, staying asleep, waking up rested"></textarea></div>
+        <div class="field"><label for="s_energy">How's your energy through the day?</label><textarea id="s_energy"></textarea></div>
+        <div class="field"><label for="s_headaches">Do you get headaches? How often, and what tends to trigger them?</label><textarea id="s_headaches"></textarea></div>
+        <div class="field"><label for="s_earseyesmouth">Any concerns with your ears, eyes, or mouth?</label><textarea id="s_earseyesmouth"></textarea></div>
+        <div class="field"><label for="s_musculoskeletal">Any pain, stiffness, or injuries in your muscles or joints?</label><textarea id="s_musculoskeletal"></textarea></div>
+      </div>
+
+      <div class="section">
+        <h3>Diet</h3>
+        <div class="diet-grid" id="dietGrid"></div>
+        <div class="field" style="margin-top:16px;">
+          <label for="i_water">Water intake (roughly how many glasses/day?)</label>
+          <input type="text" id="i_water" placeholder="e.g. 4-5 glasses">
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Lifestyle</h3>
+        <div class="field"><label for="l_exercise">What does movement/exercise look like for you?</label><input type="text" id="l_exercise" placeholder="Type and how often"></div>
+        <div class="field"><label for="l_stress">On a scale of 1–10, how would you rate your stress lately, and what's contributing to it?</label><input type="text" id="l_stress"></div>
+        <div class="field"><label for="l_sleep">How many hours do you usually sleep, and how would you describe the quality?</label><input type="text" id="l_sleep"></div>
+      </div>
+
+      <div class="section">
+        <h3>Family History</h3>
+        <div class="field">
+          <label for="i_family">Is there a history of any major health conditions in your immediate family?</label>
+          <textarea id="i_family" placeholder="e.g. diabetes, heart disease, thyroid issues"></textarea>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Allergies & Sensitivities</h3>
+        <div class="field">
+          <label for="i_allergies">Any known allergies or sensitivities?</label>
+          <textarea id="i_allergies" placeholder="Foods, medications, environmental, etc."></textarea>
+        </div>
+      </div>
+    </form>
+
+    <div class="save-indicator">
+      <div class="save-pill" id="savePill">Saved ✓</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const BACKEND_URL = "https://practitioner-api.val.run";
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get("token");
+
+  const INTAKE_FIELD_IDS = [
+    "i_reason","i_practitioners","i_medications",
+    "s_digestion","s_skin","s_immune","s_cardiovascular","s_respiratory",
+    "s_urinary","s_reproductive","s_menstrual","s_nervous","s_sleep","s_energy",
+    "s_headaches","s_earseyesmouth","s_musculoskeletal",
+    "i_water",
+    "l_exercise","l_stress","l_sleep",
+    "i_family","i_allergies"
+  ];
+
+  const DIET_ITEMS = [
+    ["sugar", "Sugar / refined carbs"],
+    ["alcohol", "Alcohol"],
+    ["caffeine", "Caffeine"],
+    ["processed", "Processed food"],
+    ["vegetables", "Vegetables"],
+    ["protein", "Protein sources"],
+    ["eatingout", "Eating out"],
+  ];
+  const FREQ_OPTIONS = ["", "Daily", "Few times a week", "Rarely", "Never"];
+
+  const dietGrid = document.getElementById("dietGrid");
+  DIET_ITEMS.forEach(([key, label]) => {
+    const labelEl = document.createElement("div");
+    labelEl.className = "diet-label";
+    labelEl.textContent = label;
+    const select = document.createElement("select");
+    select.id = `diet_${key}`;
+    FREQ_OPTIONS.forEach((opt) => {
+      const o = document.createElement("option");
+      o.value = opt;
+      o.textContent = opt || "—";
+      select.appendChild(o);
+    });
+    dietGrid.appendChild(labelEl);
+    dietGrid.appendChild(select);
+  });
+
+  let saveTimeout = null;
+
+  function showSavedPill() {
+    const pill = document.getElementById("savePill");
+    pill.classList.add("visible");
+    clearTimeout(pill._hideTimeout);
+    pill._hideTimeout = setTimeout(() => pill.classList.remove("visible"), 1800);
+  }
+
+  function collectResponses() {
+    const responses = {};
+    INTAKE_FIELD_IDS.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) responses[id] = el.value;
+    });
+    DIET_ITEMS.forEach(([key]) => {
+      const el = document.getElementById(`diet_${key}`);
+      if (el) responses[`diet_${key}`] = el.value;
+    });
+    return responses;
+  }
+
+  async function autosave() {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/public/intake/${token}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ responses: collectResponses() }),
+      });
+      if (res.ok) showSavedPill();
+    } catch {
+      // Silent — will retry on next change. No point alarming the client
+      // over a transient network blip; their edits stay in the field.
+    }
+  }
+
+  function scheduleAutosave() {
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(autosave, 900);
+  }
+
+  function wireAutosave() {
+    document.querySelectorAll("#intakeForm input, #intakeForm textarea, #intakeForm select").forEach((el) => {
+      el.addEventListener("input", scheduleAutosave);
+      el.addEventListener("change", scheduleAutosave);
+    });
+  }
+
+  async function load() {
+    if (!token) {
+      document.getElementById("loadingMsg").style.display = "none";
+      document.getElementById("errorCard").style.display = "block";
+      return;
+    }
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/public/intake/${token}`);
+      if (!res.ok) {
+        document.getElementById("loadingMsg").style.display = "none";
+        document.getElementById("errorCard").style.display = "block";
+        return;
+      }
+      const data = await res.json();
+      document.getElementById("clientLabel").textContent = data.client_full_name || "";
+
+      const responses = data.responses || {};
+      INTAKE_FIELD_IDS.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el && responses[id] !== undefined) el.value = responses[id];
+      });
+      DIET_ITEMS.forEach(([key]) => {
+        const el = document.getElementById(`diet_${key}`);
+        if (el && responses[`diet_${key}`] !== undefined) el.value = responses[`diet_${key}`];
+      });
+
+      wireAutosave();
+      document.getElementById("loadingMsg").style.display = "none";
+      document.getElementById("formWrap").style.display = "block";
+    } catch {
+      document.getElementById("loadingMsg").style.display = "none";
+      document.getElementById("errorCard").style.display = "block";
+    }
+  }
+
+  load();
+</script>
+
+</body>
+</html>

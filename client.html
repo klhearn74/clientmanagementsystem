@@ -536,6 +536,28 @@
 
   .modal.report-modal { max-width: 440px; }
   .report-date-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; max-height: 320px; overflow-y: auto; }
+  .modal.intake-link-modal { max-width: 460px; }
+  .intake-link-box {
+    background: var(--parchment);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 12px 14px;
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    word-break: break-all;
+    margin: 14px 0;
+  }
+  .intake-link-actions { display: flex; gap: 10px; margin-top: 10px; }
+  .intake-link-actions button { flex: 1; }
+  .intake-link-copied {
+    font-size: 0.8rem;
+    color: var(--sage-deep);
+    font-weight: 600;
+    margin-top: 8px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .intake-link-copied.visible { opacity: 1; }
   .report-date-option {
     background: var(--parchment);
     border: 1px solid var(--border);
@@ -564,6 +586,7 @@
       <div id="waiverBadgeWrap"></div>
     </div>
     <div class="header-actions">
+      <button class="report-btn" id="intakeLinkBtn">Intake Link</button>
       <button class="report-btn" id="exportClientBtn">Export Data</button>
       <button class="report-btn" id="generateReportBtn">Generate Visit Report</button>
     </div>
@@ -581,7 +604,7 @@
       <div class="section">
         <h3>Reason for Visit</h3>
         <div class="field">
-          <label for="i_reason">What brings you in? What are your main health concerns?</label>
+          <label for="i_reason">What brings you in today? What are you hoping to get help with?</label>
           <textarea id="i_reason"></textarea>
         </div>
       </div>
@@ -589,30 +612,31 @@
       <div class="section">
         <h3>Current Care</h3>
         <div class="field">
-          <label for="i_practitioners">Other practitioners currently involved (doctor, dietitian, etc.)</label>
+          <label for="i_practitioners">Are you currently seeing any other practitioners (doctor, dietitian, etc.)? If so, who and for what?</label>
           <textarea id="i_practitioners"></textarea>
         </div>
         <div class="field">
-          <label for="i_medications">Current medications / supplements (with dose if known)</label>
+          <label for="i_medications">What medications or supplements are you currently taking, and at what dose (if known)?</label>
           <textarea id="i_medications"></textarea>
         </div>
       </div>
 
       <div class="section">
         <h3>Systems Review</h3>
-        <div class="field"><label for="s_digestion">Digestion</label><textarea id="s_digestion"></textarea></div>
-        <div class="field"><label for="s_skin">Skin</label><textarea id="s_skin"></textarea></div>
-        <div class="field"><label for="s_immune">Immune</label><textarea id="s_immune"></textarea></div>
-        <div class="field"><label for="s_cardiovascular">Cardiovascular</label><textarea id="s_cardiovascular"></textarea></div>
-        <div class="field"><label for="s_respiratory">Respiratory</label><textarea id="s_respiratory"></textarea></div>
-        <div class="field"><label for="s_urinary">Urinary</label><textarea id="s_urinary"></textarea></div>
-        <div class="field"><label for="s_reproductive">Reproductive / Hormonal</label><textarea id="s_reproductive"></textarea></div>
-        <div class="field"><label for="s_nervous">Nervous system / Emotional</label><textarea id="s_nervous"></textarea></div>
-        <div class="field"><label for="s_sleep">Sleep</label><textarea id="s_sleep"></textarea></div>
-        <div class="field"><label for="s_energy">Energy</label><textarea id="s_energy"></textarea></div>
-        <div class="field"><label for="s_headaches">Headaches</label><textarea id="s_headaches"></textarea></div>
-        <div class="field"><label for="s_earseyesmouth">Ears / Eyes / Mouth</label><textarea id="s_earseyesmouth"></textarea></div>
-        <div class="field"><label for="s_musculoskeletal">Musculoskeletal</label><textarea id="s_musculoskeletal"></textarea></div>
+        <div class="field"><label for="s_digestion">How's your digestion?</label><textarea id="s_digestion" placeholder="e.g. bloating, regularity, discomfort"></textarea></div>
+        <div class="field"><label for="s_skin">Any skin concerns?</label><textarea id="s_skin" placeholder="e.g. rashes, acne, dryness, eczema"></textarea></div>
+        <div class="field"><label for="s_immune">How often do you get sick, and how well do you recover?</label><textarea id="s_immune"></textarea></div>
+        <div class="field"><label for="s_cardiovascular">Any concerns with your heart or circulation?</label><textarea id="s_cardiovascular" placeholder="e.g. blood pressure, cold hands/feet"></textarea></div>
+        <div class="field"><label for="s_respiratory">Any breathing concerns?</label><textarea id="s_respiratory" placeholder="e.g. shortness of breath, congestion, allergies"></textarea></div>
+        <div class="field"><label for="s_urinary">Any urinary concerns?</label><textarea id="s_urinary" placeholder="e.g. frequency, discomfort"></textarea></div>
+        <div class="field"><label for="s_reproductive">Any hormonal or reproductive concerns you'd like to share?</label><textarea id="s_reproductive"></textarea></div>
+        <div class="field"><label for="s_menstrual">How would you describe your menstrual cycle?</label><textarea id="s_menstrual" placeholder="e.g. regular, irregular, absent, painful cramps, mood changes"></textarea></div>
+        <div class="field"><label for="s_nervous">How's your stress, mood, or emotional wellbeing lately?</label><textarea id="s_nervous"></textarea></div>
+        <div class="field"><label for="s_sleep">How's your sleep?</label><textarea id="s_sleep" placeholder="e.g. falling asleep, staying asleep, waking up rested"></textarea></div>
+        <div class="field"><label for="s_energy">How's your energy through the day?</label><textarea id="s_energy"></textarea></div>
+        <div class="field"><label for="s_headaches">Do you get headaches? How often, and what tends to trigger them?</label><textarea id="s_headaches"></textarea></div>
+        <div class="field"><label for="s_earseyesmouth">Any concerns with your ears, eyes, or mouth?</label><textarea id="s_earseyesmouth"></textarea></div>
+        <div class="field"><label for="s_musculoskeletal">Any pain, stiffness, or injuries in your muscles or joints?</label><textarea id="s_musculoskeletal"></textarea></div>
       </div>
 
       <div class="section">
@@ -626,24 +650,24 @@
 
       <div class="section">
         <h3>Lifestyle</h3>
-        <div class="field"><label for="l_exercise">Exercise (type / frequency)</label><input type="text" id="l_exercise"></div>
-        <div class="field"><label for="l_stress">Stress (1–10 and main sources)</label><input type="text" id="l_stress"></div>
-        <div class="field"><label for="l_sleep">Sleep (hours, quality, wake-ups)</label><input type="text" id="l_sleep"></div>
+        <div class="field"><label for="l_exercise">What does movement/exercise look like for you?</label><input type="text" id="l_exercise" placeholder="Type and how often"></div>
+        <div class="field"><label for="l_stress">On a scale of 1–10, how would you rate your stress lately, and what's contributing to it?</label><input type="text" id="l_stress"></div>
+        <div class="field"><label for="l_sleep">How many hours do you usually sleep, and how would you describe the quality?</label><input type="text" id="l_sleep"></div>
       </div>
 
       <div class="section">
         <h3>Family History</h3>
         <div class="field">
-          <label for="i_family">Family history (diabetes, heart disease, thyroid, etc.)</label>
-          <textarea id="i_family"></textarea>
+          <label for="i_family">Is there a history of any major health conditions in your immediate family?</label>
+          <textarea id="i_family" placeholder="e.g. diabetes, heart disease, thyroid issues"></textarea>
         </div>
       </div>
 
       <div class="section">
         <h3>Allergies & Sensitivities</h3>
         <div class="field">
-          <label for="i_allergies">Known allergies or sensitivities</label>
-          <textarea id="i_allergies"></textarea>
+          <label for="i_allergies">Any known allergies or sensitivities?</label>
+          <textarea id="i_allergies" placeholder="Foods, medications, environmental, etc."></textarea>
         </div>
       </div>
 
@@ -982,6 +1006,30 @@
   </div>
 </div>
 
+<div class="overlay" id="intakeLinkModalOverlay">
+  <div class="modal intake-link-modal">
+    <h3>Intake Link</h3>
+    <p class="section-hint">Send this link to your client so they can fill out their own intake form. It autosaves as they go, so they can leave and come back anytime — nothing gets "submitted" and locked.</p>
+
+    <div id="intakeLinkNoneState">
+      <button type="button" class="primary" id="generateIntakeLinkBtn">Generate Intake Link</button>
+    </div>
+
+    <div id="intakeLinkExistsState" style="display:none;">
+      <div class="intake-link-box" id="intakeLinkText"></div>
+      <div class="intake-link-actions">
+        <button type="button" class="secondary" id="copyIntakeLinkBtn">Copy Link</button>
+        <button type="button" class="secondary" id="regenerateIntakeLinkBtn">Regenerate Link</button>
+      </div>
+      <div class="intake-link-copied" id="intakeLinkCopiedMsg">Copied ✓</div>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="secondary" id="closeIntakeLinkBtn">Close</button>
+    </div>
+  </div>
+</div>
+
 
 <script>
   const BACKEND_URL = "https://practitioner-api.val.run";
@@ -1045,7 +1093,7 @@
   const INTAKE_FIELD_IDS = [
     "i_reason","i_practitioners","i_medications",
     "s_digestion","s_skin","s_immune","s_cardiovascular","s_respiratory",
-    "s_urinary","s_reproductive","s_nervous","s_sleep","s_energy",
+    "s_urinary","s_reproductive","s_menstrual","s_nervous","s_sleep","s_energy",
     "s_headaches","s_earseyesmouth","s_musculoskeletal",
     "i_water",
     "l_exercise","l_stress","l_sleep",
@@ -1823,6 +1871,71 @@ I understand that my records will be kept confidential in accordance with my her
     } finally {
       btn.disabled = false;
     }
+  });
+
+  // ---------- Intake Link ----------
+  function intakeLinkUrl(token) {
+    return `${window.location.origin}${window.location.pathname.replace(/client\.html$/, "")}intake-form.html?token=${token}`;
+  }
+
+  async function refreshIntakeLinkModal() {
+    const noneState = document.getElementById("intakeLinkNoneState");
+    const existsState = document.getElementById("intakeLinkExistsState");
+    document.getElementById("intakeLinkCopiedMsg").classList.remove("visible");
+
+    const res = await fetch(`${BACKEND_URL}/api/clients/${clientId}/intake-link`, { credentials: "include" });
+    if (res.status === 401) { window.location.href = "index.html"; return; }
+    const data = await res.json();
+
+    if (data.token) {
+      noneState.style.display = "none";
+      existsState.style.display = "block";
+      document.getElementById("intakeLinkText").textContent = intakeLinkUrl(data.token);
+    } else {
+      noneState.style.display = "block";
+      existsState.style.display = "none";
+    }
+  }
+
+  document.getElementById("intakeLinkBtn").addEventListener("click", async () => {
+    document.getElementById("intakeLinkModalOverlay").classList.add("visible");
+    await refreshIntakeLinkModal();
+  });
+  document.getElementById("closeIntakeLinkBtn").addEventListener("click", () => {
+    document.getElementById("intakeLinkModalOverlay").classList.remove("visible");
+  });
+  document.getElementById("intakeLinkModalOverlay").addEventListener("click", (e) => {
+    if (e.target === document.getElementById("intakeLinkModalOverlay")) {
+      document.getElementById("intakeLinkModalOverlay").classList.remove("visible");
+    }
+  });
+
+  async function generateIntakeLink() {
+    const res = await fetch(`${BACKEND_URL}/api/clients/${clientId}/intake-link`, {
+      method: "POST",
+      credentials: "include",
+    });
+    if (res.status === 401) { window.location.href = "index.html"; return; }
+    await refreshIntakeLinkModal();
+  }
+
+  document.getElementById("generateIntakeLinkBtn").addEventListener("click", generateIntakeLink);
+
+  document.getElementById("regenerateIntakeLinkBtn").addEventListener("click", () => {
+    const confirmed = confirm("This will make the old link stop working — anyone who still has it won't be able to use it anymore. Continue?");
+    if (confirmed) generateIntakeLink();
+  });
+
+  document.getElementById("copyIntakeLinkBtn").addEventListener("click", async () => {
+    const text = document.getElementById("intakeLinkText").textContent;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // Clipboard API may be unavailable — the link is still visible to select/copy manually.
+    }
+    const msg = document.getElementById("intakeLinkCopiedMsg");
+    msg.classList.add("visible");
+    setTimeout(() => msg.classList.remove("visible"), 2000);
   });
 
   // ---------- Data Export ----------
