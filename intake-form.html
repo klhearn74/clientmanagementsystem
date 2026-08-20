@@ -108,25 +108,33 @@
   .diet-grid .diet-label { font-size: 0.85rem; }
 
   .save-indicator {
-    position: sticky;
-    bottom: 20px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
     display: flex;
     justify-content: center;
-    margin-top: 20px;
+    z-index: 20;
     pointer-events: none;
   }
   .save-pill {
     background: var(--sage-deep);
     color: #fff;
-    padding: 8px 18px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 600;
+    padding: 14px 28px;
+    border-radius: 0 0 10px 10px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
     opacity: 0;
-    transition: opacity 0.3s ease;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    transform: translateY(-100%);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
-  .save-pill.visible { opacity: 1; }
+  .save-pill.visible { opacity: 1; transform: translateY(0); }
+  .save-pill .checkmark { font-size: 1.1rem; }
 
   .loading, .error-card {
     text-align: center;
@@ -220,6 +228,11 @@
       </div>
 
       <div class="section">
+        <h3>Substance Use</h3>
+        <div class="diet-grid" id="substanceGrid"></div>
+      </div>
+
+      <div class="section">
         <h3>Lifestyle</h3>
         <div class="field"><label for="l_exercise">What does movement/exercise look like for you?</label><input type="text" id="l_exercise" placeholder="Type and how often"></div>
         <div class="field"><label for="l_stress">On a scale of 1–10, how would you rate your stress lately, and what's contributing to it?</label><input type="text" id="l_stress"></div>
@@ -244,7 +257,7 @@
     </form>
 
     <div class="save-indicator">
-      <div class="save-pill" id="savePill">Saved ✓</div>
+      <div class="save-pill" id="savePill"><span class="checkmark">✓</span> Your answers are saved</div>
     </div>
   </div>
 </div>
@@ -266,31 +279,41 @@
 
   const DIET_ITEMS = [
     ["sugar", "Sugar / refined carbs"],
-    ["alcohol", "Alcohol"],
-    ["caffeine", "Caffeine"],
     ["processed", "Processed food"],
     ["vegetables", "Vegetables"],
     ["protein", "Protein sources"],
     ["eatingout", "Eating out"],
   ];
+  const SUBSTANCE_ITEMS = [
+    ["alcohol", "Alcohol"],
+    ["caffeine", "Caffeine"],
+    ["tobacco", "Tobacco / nicotine (cigarettes, vaping, chew, etc.)"],
+    ["cannabis", "Cannabis (any form, including vaping/edibles)"],
+  ];
   const FREQ_OPTIONS = ["", "Daily", "Few times a week", "Rarely", "Never"];
 
-  const dietGrid = document.getElementById("dietGrid");
-  DIET_ITEMS.forEach(([key, label]) => {
-    const labelEl = document.createElement("div");
-    labelEl.className = "diet-label";
-    labelEl.textContent = label;
-    const select = document.createElement("select");
-    select.id = `diet_${key}`;
-    FREQ_OPTIONS.forEach((opt) => {
-      const o = document.createElement("option");
-      o.value = opt;
-      o.textContent = opt || "—";
-      select.appendChild(o);
+  function buildFrequencyGrid(gridEl, items, prefix) {
+    items.forEach(([key, label]) => {
+      const labelEl = document.createElement("div");
+      labelEl.className = "diet-label";
+      labelEl.textContent = label;
+      const select = document.createElement("select");
+      select.id = `${prefix}_${key}`;
+      FREQ_OPTIONS.forEach((opt) => {
+        const o = document.createElement("option");
+        o.value = opt;
+        o.textContent = opt || "—";
+        select.appendChild(o);
+      });
+      gridEl.appendChild(labelEl);
+      gridEl.appendChild(select);
     });
-    dietGrid.appendChild(labelEl);
-    dietGrid.appendChild(select);
-  });
+  }
+
+  const dietGrid = document.getElementById("dietGrid");
+  buildFrequencyGrid(dietGrid, DIET_ITEMS, "diet");
+  const substanceGrid = document.getElementById("substanceGrid");
+  buildFrequencyGrid(substanceGrid, SUBSTANCE_ITEMS, "sub");
 
   let saveTimeout = null;
 
@@ -298,7 +321,7 @@
     const pill = document.getElementById("savePill");
     pill.classList.add("visible");
     clearTimeout(pill._hideTimeout);
-    pill._hideTimeout = setTimeout(() => pill.classList.remove("visible"), 1800);
+    pill._hideTimeout = setTimeout(() => pill.classList.remove("visible"), 2500);
   }
 
   function collectResponses() {
@@ -310,6 +333,10 @@
     DIET_ITEMS.forEach(([key]) => {
       const el = document.getElementById(`diet_${key}`);
       if (el) responses[`diet_${key}`] = el.value;
+    });
+    SUBSTANCE_ITEMS.forEach(([key]) => {
+      const el = document.getElementById(`sub_${key}`);
+      if (el) responses[`sub_${key}`] = el.value;
     });
     return responses;
   }
@@ -364,6 +391,10 @@
       DIET_ITEMS.forEach(([key]) => {
         const el = document.getElementById(`diet_${key}`);
         if (el && responses[`diet_${key}`] !== undefined) el.value = responses[`diet_${key}`];
+      });
+      SUBSTANCE_ITEMS.forEach(([key]) => {
+        const el = document.getElementById(`sub_${key}`);
+        if (el && responses[`sub_${key}`] !== undefined) el.value = responses[`sub_${key}`];
       });
 
       wireAutosave();

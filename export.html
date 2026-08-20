@@ -232,10 +232,12 @@
     i_water: "Water intake",
     l_exercise: "Exercise", l_stress: "Stress", l_sleep: "Sleep (lifestyle)",
     i_family: "Family history", i_allergies: "Allergies / sensitivities",
-    diet_sugar: "Diet — Sugar / refined carbs", diet_alcohol: "Diet — Alcohol",
-    diet_caffeine: "Diet — Caffeine", diet_processed: "Diet — Processed food",
+    diet_sugar: "Diet — Sugar / refined carbs",
+    diet_processed: "Diet — Processed food",
     diet_vegetables: "Diet — Vegetables", diet_protein: "Diet — Protein sources",
     diet_eatingout: "Diet — Eating out",
+    sub_alcohol: "Substance Use — Alcohol", sub_caffeine: "Substance Use — Caffeine",
+    sub_tobacco: "Substance Use — Tobacco / nicotine", sub_cannabis: "Substance Use — Cannabis",
   };
 
   function escapeHtml(str) {
@@ -267,7 +269,10 @@
 
   function renderWaivers(waivers) {
     if (!waivers || waivers.length === 0) return `<div class="empty-note">No waiver signed.</div>`;
-    return waivers.map((w) => `<div class="kv-grid">${kvRow("Signed", formatDate(w.signed_at))}</div>`).join("");
+    return waivers.map((w) => {
+      const signedDate = w.signed_date ? formatDate(w.signed_date) : formatDate(w.signed_at);
+      return `<div class="kv-grid">${kvRow("Signed by", w.signed_name || "(not recorded)")}${kvRow("Date", signedDate)}</div>`;
+    }).join("");
   }
 
   function renderHerb(h) {

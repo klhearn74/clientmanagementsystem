@@ -649,6 +649,11 @@
       </div>
 
       <div class="section">
+        <h3>Substance Use</h3>
+        <div class="diet-grid" id="substanceGrid"></div>
+      </div>
+
+      <div class="section">
         <h3>Lifestyle</h3>
         <div class="field"><label for="l_exercise">What does movement/exercise look like for you?</label><input type="text" id="l_exercise" placeholder="Type and how often"></div>
         <div class="field"><label for="l_stress">On a scale of 1–10, how would you rate your stress lately, and what's contributing to it?</label><input type="text" id="l_stress"></div>
@@ -681,7 +686,10 @@
   <!-- WAIVER PANEL -->
   <div class="panel" id="panel-waiver">
     <div class="section" id="waiverSection">
-      <h3>Liability Waiver & Informed Consent</h3>
+      <div class="toolbar-row">
+        <h3 style="margin:0;">Liability Waiver & Informed Consent</h3>
+        <button type="button" class="report-btn" id="waiverLinkBtn">Waiver Link</button>
+      </div>
       <div class="waiver-text" id="waiverTextBox">Loading…</div>
       <div id="waiverActionArea"></div>
     </div>
@@ -1030,6 +1038,30 @@
   </div>
 </div>
 
+<div class="overlay" id="waiverLinkModalOverlay">
+  <div class="modal intake-link-modal">
+    <h3>Waiver Link</h3>
+    <p class="section-hint">Send this link to your client so they can read and sign the waiver themselves — they'll type their name and the date, and it's recorded automatically once signed.</p>
+
+    <div id="waiverLinkNoneState">
+      <button type="button" class="primary" id="generateWaiverLinkBtn">Generate Waiver Link</button>
+    </div>
+
+    <div id="waiverLinkExistsState" style="display:none;">
+      <div class="intake-link-box" id="waiverLinkText"></div>
+      <div class="intake-link-actions">
+        <button type="button" class="secondary" id="copyWaiverLinkBtn">Copy Link</button>
+        <button type="button" class="secondary" id="regenerateWaiverLinkBtn">Regenerate Link</button>
+      </div>
+      <div class="intake-link-copied" id="waiverLinkCopiedMsg">Copied ✓</div>
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="secondary" id="closeWaiverLinkBtn">Close</button>
+    </div>
+  </div>
+</div>
+
 
 <script>
   const BACKEND_URL = "https://practitioner-api.val.run";
@@ -1042,31 +1074,41 @@
 
   const DIET_ITEMS = [
     ["sugar", "Sugar / refined carbs"],
-    ["alcohol", "Alcohol"],
-    ["caffeine", "Caffeine"],
     ["processed", "Processed food"],
     ["vegetables", "Vegetables"],
     ["protein", "Protein sources"],
     ["eatingout", "Eating out"],
   ];
+  const SUBSTANCE_ITEMS = [
+    ["alcohol", "Alcohol"],
+    ["caffeine", "Caffeine"],
+    ["tobacco", "Tobacco / nicotine (cigarettes, vaping, chew, etc.)"],
+    ["cannabis", "Cannabis (any form, including vaping/edibles)"],
+  ];
   const FREQ_OPTIONS = ["", "Daily", "Few times a week", "Rarely", "Never"];
 
-  const dietGrid = document.getElementById("dietGrid");
-  DIET_ITEMS.forEach(([key, label]) => {
-    const labelEl = document.createElement("div");
-    labelEl.className = "diet-label";
-    labelEl.textContent = label;
-    const select = document.createElement("select");
-    select.id = `diet_${key}`;
-    FREQ_OPTIONS.forEach((opt) => {
-      const o = document.createElement("option");
-      o.value = opt;
-      o.textContent = opt || "—";
-      select.appendChild(o);
+  function buildFrequencyGrid(gridEl, items, prefix) {
+    items.forEach(([key, label]) => {
+      const labelEl = document.createElement("div");
+      labelEl.className = "diet-label";
+      labelEl.textContent = label;
+      const select = document.createElement("select");
+      select.id = `${prefix}_${key}`;
+      FREQ_OPTIONS.forEach((opt) => {
+        const o = document.createElement("option");
+        o.value = opt;
+        o.textContent = opt || "—";
+        select.appendChild(o);
+      });
+      gridEl.appendChild(labelEl);
+      gridEl.appendChild(select);
     });
-    dietGrid.appendChild(labelEl);
-    dietGrid.appendChild(select);
-  });
+  }
+
+  const dietGrid = document.getElementById("dietGrid");
+  buildFrequencyGrid(dietGrid, DIET_ITEMS, "diet");
+  const substanceGrid = document.getElementById("substanceGrid");
+  buildFrequencyGrid(substanceGrid, SUBSTANCE_ITEMS, "sub");
 
   // ---------- Tabs ----------
   document.querySelectorAll(".tab:not(.disabled)").forEach((tab) => {
@@ -1114,6 +1156,10 @@
       const el = document.getElementById(`diet_${key}`);
       if (el && responses[`diet_${key}`] !== undefined) el.value = responses[`diet_${key}`];
     });
+    SUBSTANCE_ITEMS.forEach(([key]) => {
+      const el = document.getElementById(`sub_${key}`);
+      if (el && responses[`sub_${key}`] !== undefined) el.value = responses[`sub_${key}`];
+    });
   }
 
   document.getElementById("intakeForm").addEventListener("submit", async (e) => {
@@ -1129,6 +1175,10 @@
     DIET_ITEMS.forEach(([key]) => {
       const el = document.getElementById(`diet_${key}`);
       if (el) responses[`diet_${key}`] = el.value;
+    });
+    SUBSTANCE_ITEMS.forEach(([key]) => {
+      const el = document.getElementById(`sub_${key}`);
+      if (el) responses[`sub_${key}`] = el.value;
     });
 
     try {
@@ -1181,8 +1231,11 @@ I understand that my records will be kept confidential in accordance with my her
 
     if (waiver) {
       renderWaiverBadge(true);
-      const signedDate = new Date(waiver.signed_at).toLocaleDateString();
-      actionArea.innerHTML = `<div class="signed-info">Signed on ${signedDate}</div>`;
+      const signedDate = waiver.signed_date
+        ? new Date(waiver.signed_date + "T00:00:00").toLocaleDateString()
+        : new Date(waiver.signed_at).toLocaleDateString();
+      const signedByLine = waiver.signed_name ? `Signed by ${escapeHtml(waiver.signed_name)} on ${signedDate}` : `Signed on ${signedDate}`;
+      actionArea.innerHTML = `<div class="signed-info">${signedByLine}</div>`;
     } else {
       renderWaiverBadge(false);
       actionArea.innerHTML = `
@@ -1934,6 +1987,71 @@ I understand that my records will be kept confidential in accordance with my her
       // Clipboard API may be unavailable — the link is still visible to select/copy manually.
     }
     const msg = document.getElementById("intakeLinkCopiedMsg");
+    msg.classList.add("visible");
+    setTimeout(() => msg.classList.remove("visible"), 2000);
+  });
+
+  // ---------- Waiver Link ----------
+  function waiverLinkUrl(token) {
+    return `${window.location.origin}${window.location.pathname.replace(/client\.html$/, "")}waiver-form.html?token=${token}`;
+  }
+
+  async function refreshWaiverLinkModal() {
+    const noneState = document.getElementById("waiverLinkNoneState");
+    const existsState = document.getElementById("waiverLinkExistsState");
+    document.getElementById("waiverLinkCopiedMsg").classList.remove("visible");
+
+    const res = await fetch(`${BACKEND_URL}/api/clients/${clientId}/waiver-link`, { credentials: "include" });
+    if (res.status === 401) { window.location.href = "index.html"; return; }
+    const data = await res.json();
+
+    if (data.token) {
+      noneState.style.display = "none";
+      existsState.style.display = "block";
+      document.getElementById("waiverLinkText").textContent = waiverLinkUrl(data.token);
+    } else {
+      noneState.style.display = "block";
+      existsState.style.display = "none";
+    }
+  }
+
+  document.getElementById("waiverLinkBtn").addEventListener("click", async () => {
+    document.getElementById("waiverLinkModalOverlay").classList.add("visible");
+    await refreshWaiverLinkModal();
+  });
+  document.getElementById("closeWaiverLinkBtn").addEventListener("click", () => {
+    document.getElementById("waiverLinkModalOverlay").classList.remove("visible");
+  });
+  document.getElementById("waiverLinkModalOverlay").addEventListener("click", (e) => {
+    if (e.target === document.getElementById("waiverLinkModalOverlay")) {
+      document.getElementById("waiverLinkModalOverlay").classList.remove("visible");
+    }
+  });
+
+  async function generateWaiverLink() {
+    const res = await fetch(`${BACKEND_URL}/api/clients/${clientId}/waiver-link`, {
+      method: "POST",
+      credentials: "include",
+    });
+    if (res.status === 401) { window.location.href = "index.html"; return; }
+    await refreshWaiverLinkModal();
+  }
+
+  document.getElementById("generateWaiverLinkBtn").addEventListener("click", generateWaiverLink);
+
+  document.getElementById("regenerateWaiverLinkBtn").addEventListener("click", () => {
+    const confirmed = confirm("This will make the old link stop working — anyone who still has it won't be able to use it anymore. Continue?");
+    if (confirmed) generateWaiverLink();
+  });
+
+  document.getElementById("copyWaiverLinkBtn").addEventListener("click", async () => {
+    const text = document.getElementById("waiverLinkText").textContent;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // Clipboard API may be unavailable — the link is still visible to select/copy manually.
+    }
+    const msg = document.getElementById("waiverLinkCopiedMsg");
     msg.classList.add("visible");
     setTimeout(() => msg.classList.remove("visible"), 2000);
   });
