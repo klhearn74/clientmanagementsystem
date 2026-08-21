@@ -314,6 +314,7 @@
   <a href="#" class="back-link" id="backLink">← Back to client</a>
   <div class="toolbar-actions">
     <span class="toolbar-hint" id="saveStatus">Click any text to edit before printing</span>
+    <button class="secondary" id="refreshBtn" style="display:none;">Refresh from latest notes</button>
     <button class="secondary" id="saveBtn">Save</button>
     <button class="primary" id="printBtn">Print / Export PDF</button>
   </div>
@@ -481,9 +482,18 @@
       document.getElementById("reportBody").innerHTML = saved.content;
       document.getElementById("loadingMsg").style.display = "none";
       document.getElementById("reportBody").style.display = "block";
+      // This is a previously-saved copy, which may now be stale if the
+      // session note was edited afterward — surface a way to pull in
+      // the latest text instead of silently showing old content.
+      document.getElementById("saveStatus").textContent = "Showing a saved copy — edited your notes since? Use Refresh.";
+      document.getElementById("refreshBtn").style.display = "inline-block";
       return;
     }
 
+    await loadFreshDraft();
+  }
+
+  async function loadFreshDraft() {
     const res = await fetch(`${BACKEND_URL}/api/clients/${clientId}/visit-report?date=${visitDate}`, { credentials: "include" });
     if (res.status === 401) { window.location.href = "index.html"; return; }
     if (!res.ok) {
@@ -496,10 +506,15 @@
 
     document.getElementById("loadingMsg").style.display = "none";
     document.getElementById("reportBody").style.display = "block";
+    document.getElementById("refreshBtn").style.display = "none";
 
-    // Save an initial snapshot right away so a record exists from the
-    // start, even before any manual edits are made.
-    await saveSnapshot(true);
+    // NOTE: we deliberately do NOT auto-save a snapshot here anymore.
+    // Auto-saving on first view was freezing the report the moment it
+    // was generated, so later edits to the session note's Plan text
+    // wouldn't show up here on repeat visits — it looked like the
+    // report was cutting text off, when really it was just showing an
+    // older version. Now nothing is frozen until Save or Print is
+    // clicked explicitly.
   }
 
   async function saveSnapshot(silent) {
@@ -521,6 +536,16 @@
     }
     return res.ok;
   }
+
+  document.getElementById("refreshBtn").addEventListener("click", async () => {
+    const ok = confirm("This will pull in the latest text from your session notes and formulas, replacing what's shown here. Any edits you've made directly on this report page will be lost. Continue?");
+    if (!ok) return;
+    document.getElementById("reportBody").style.display = "none";
+    document.getElementById("loadingMsg").style.display = "block";
+    document.getElementById("loadingMsg").textContent = "Refreshing…";
+    document.getElementById("saveStatus").textContent = "Click any text to edit before printing";
+    await loadFreshDraft();
+  });
 
   document.getElementById("saveBtn").addEventListener("click", () => saveSnapshot(false));
   document.getElementById("printBtn").addEventListener("click", async () => {
